@@ -1,7 +1,15 @@
 # MGE_snakemake_workflow
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum speicmens. 
 ![image](https://github.com/user-attachments/assets/497b8006-af02-44ef-8d93-4e2b760e833f)
-
+- config.smk - Contains configuration parsing, validation, and utility functions. Placing these in a separate file is good practice as it isolates configuration management from workflow logic.
+- common.smk - Defines shared variables, directory structures, and the crucial rule all that establishes the workflow's outputs. The placement of get_mge_input here is appropriate since it's used across different workflow branches.
+- preprocessing_merge.smk and preprocessing_concat.smk - Each contains a complete set of rules for a specific processing mode. This separation allows clear visualization of each workflow path without conditional logic cluttering individual rules.
+- mge.smk - Contains the core MitoGeneExtractor rule, which is the primary computational step. Isolating this in its own file makes sense as it's a major processing step.
+- rename_concat_cons.smk - 
+- alignment_log.smk - 
+- fasta_cleaner.smk - 
+- extract_statistics.smk - 
+- cleanup.smk - Handles workflow cleanup
 # Requirements: #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
 - Paired-end reads in .fastq.gz or .fastq format.
@@ -187,18 +195,6 @@ See scripts/.
 - [**fasta_cleaner.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
 - [**mge_stats.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/mge_stats.py) = This script (incorporated into 'rule extract_stats_to_csv') uses alignment fasta files and MGE.out files to generate summary statistics for each sample.
 - [**fasta_compare.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_compare.py) = Supplementary script that can be run after the MGE pipeline is finished. It will compare barcodes produced using different parameter combinations (from one run or multiple runs) for each sample, ranks each barcode 1-5 based on [BOLD BIN criteria](https://v3.boldsystems.org/index.php/resources/handbook?chapter=2_databases.html&section=bins), and select the 'best' (BOLD BIN compliant) barcode.
-
-## Full workflow ##
-- Snakefile - The main entry point that includes all other files. It establishes the minimum Snakemake version and handles the conditional inclusion of preprocessing files based on mode. This follows a common pattern in complex workflows where the main file serves primarily as an orchestrator.
-- config.smk - Contains configuration parsing, validation, and utility functions. Placing these in a separate file is good practice as it isolates configuration management from workflow logic.
-- common.smk - Defines shared variables, directory structures, and the crucial rule all that establishes the workflow's outputs. The placement of get_mge_input here is appropriate since it's used across different workflow branches.
-- preprocessing_merge.smk and preprocessing_concat.smk - Each contains a complete set of rules for a specific processing mode. This separation allows clear visualization of each workflow path without conditional logic cluttering individual rules.
-- mge.smk - Contains the core MitoGeneExtractor rule, which is the primary computational step. Isolating this in its own file makes sense as it's a major processing step.
-- rename_concat_cons.smk - 
-- alignment_log.smk - 
-- fasta_cleaner.smk - 
-- extract_statistics.smk - 
-- cleanup.smk - Handles workflow cleanup
 
 
 
