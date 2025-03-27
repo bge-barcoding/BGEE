@@ -1,5 +1,6 @@
 # MGE_snakemake_workflow
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum speicmens. 
+![image](https://github.com/user-attachments/assets/497b8006-af02-44ef-8d93-4e2b760e833f)
 
 # Requirements: #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
@@ -40,7 +41,8 @@ git status
 - Pre-processing modes:
   - 'merge' = adapter- and poly g-trimming, deduplication and PE read merging (fastp) -> 'cleaning' of sequence headers -> MGE
   - 'concat' = gunzip and 'cleaning' of sequence headers -> adapter- and poly g-trimming, and deduplication (fastp) -> concatenation of PE reads -> read trimming (Trim Galore (cutadapt)) -> MGE
-![image](https://github.com/user-attachments/assets/21ce71b2-42df-4442-bcde-d41ee89fa3c1)
+![image](https://github.com/user-attachments/assets/f6cff998-3972-4137-8f4d-fb12b7c03fe8)
+
 - Update config.yaml with neccessary paths and variables.
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate run paramters.
   - See [fasta_cleaner.py repository](https://github.com/bge-barcoding/fasta-cleaner) for information on filtering variables and thresholds (default below suitable in most cases).
@@ -197,7 +199,7 @@ See scripts/.
 - fasta_cleaner.smk - 
 - extract_statistics.smk - 
 - cleanup.smk - Handles workflow cleanup
-![image](https://github.com/user-attachments/assets/304dd00e-1908-409d-a0b1-330eb7d9b175)
+
 
 
 ## To do ##
