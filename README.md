@@ -1,8 +1,11 @@
 # MGE_snakemake_workflow
-Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum speicmens. 
-![image](https://github.com/user-attachments/assets/9ecf91e4-5b6e-4d4e-bc94-78653890259a)
+Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens. 
 
-- Preprocessing mode:
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9ecf91e4-5b6e-4d4e-bc94-78653890259a" width="500" alt="description">
+</p>
+
+1. Preprocessing mode:
   - 'concat':
     - fastp_pe_concat - Adapter, trimming, quality trimming, Poly-G trimming, and deduplication of paired-end reads.
     - fastq_concat - Concatenates trimmed R1 and R2 files.
@@ -13,12 +16,12 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
     - fastp_pe_merge - Adapter, trimming, quality trimming, Poly-G trimming, deduplication, and merging of paired-end reads.
     - clean_headers_merge - Cleans sequence headers, as required by MitoGeneExtractor.
     - Aggregate_clean_headers_logs - Combines individual header cleaning logs into a single log file.
-- MitoGeneExtractor (MGE) -  Extracts gene of interest from processed reads by aligning them to protein references using Exonerate.
-- rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file.
-- create_alignment_log - Creates a list of MGE alignment files for downstream processing.
-- fasta_cleaner - Filters alignment files (using supplementary script altered from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner)) to remove low-quality, contaminant, or outlier sequences.
-- extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report.
-- cleanup_files - Removes temporary files and certain logs.
+2. MitoGeneExtractor (MGE) -  Extracts gene of interest from processed reads by aligning them to protein references using Exonerate.
+3. rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file.
+4. create_alignment_log - Creates a list of MGE alignment files for downstream processing.
+5. fasta_cleaner - Filters alignment files (using supplementary script altered from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner)) to remove low-quality, contaminant, or outlier sequences.
+6. extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report.
+7. cleanup_files - Removes temporary files and certain logs.
 
   
 # Requirements: #
