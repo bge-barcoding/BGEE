@@ -2,19 +2,19 @@
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum speicmens. 
 
 # Requirements: #
-- [MitoGeneExtractor installed](https://github.com/cmayer/MitoGeneExtractor). See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
-- Paired-end reads in .fastq.gz or .fastq format
-- samples_file.csv
-- sequence_references_file.csv
+- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
+- Paired-end reads in .fastq.gz or .fastq format.
+- samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/MGE_snakemake_workflow?tab=readme-ov-file#2-generate-samplescsv)).
+- sequence_references_file.csv (Either manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
 - Activated conda env (see mge_env.yaml)
 
 # Running: #
 ## 1. Set up conda environment and clone this github repository ##
-- Install conda.
+- [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
-conda env create -f /path/to/mge_env.yaml
-git clone https://github.com/bge-barcoding/MitoGeneExtractor-BGE.git [path/to/installation/dir]
-cd [path/to/installation/dir]
+git clone https://github.com/bge-barcoding/MGE_snakemake_workflow.git [path/to/where/you/want/to/install/]
+cd MGE_snakemake_workflow/installation/dir/
+conda env create -f /workflow/scripts/mge_env.yaml
 git status
 ```
 
