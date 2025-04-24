@@ -1,6 +1,29 @@
 # MGE_snakemake_workflow
-Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum speicmens. 
+Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens. 
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9ecf91e4-5b6e-4d4e-bc94-78653890259a" width="500" alt="description">
+</p>
+
+1. Preprocessing mode:
+  - 'concat':
+    - fastp_pe_concat - Adapter, trimming, quality trimming, Poly-G trimming, and deduplication of paired-end reads.
+    - fastq_concat - Concatenates trimmed R1 and R2 files.
+    - Aggregate_concat_logs - Combines individual concatenation logs into a single log file.
+    - quality_trim - Performs additional quality trimming on concatenated reads using Trim Galore.
+    - Aggregate_trim_galore_logs - Combines individual Trim Galore logs into a single log file.
+  - 'merge:
+    - fastp_pe_merge - Adapter, trimming, quality trimming, Poly-G trimming, deduplication, and merging of paired-end reads.
+    - clean_headers_merge - Cleans sequence headers, as required by MitoGeneExtractor.
+    - Aggregate_clean_headers_logs - Combines individual header cleaning logs into a single log file.
+2. MitoGeneExtractor (MGE) -  Extracts gene of interest from processed reads by aligning them to protein references using Exonerate.
+3. rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file.
+4. create_alignment_log - Creates a list of MGE alignment files for downstream processing.
+5. fasta_cleaner - Filters alignment files (using supplementary script altered from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner)) to remove low-quality, contaminant, or outlier sequences.
+6. extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report.
+7. cleanup_files - Removes temporary files and certain logs.
+
+  
 # Requirements: #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
 - Paired-end reads in .fastq.gz or .fastq format.
@@ -40,7 +63,8 @@ git status
 - Pre-processing modes:
   - 'merge' = adapter- and poly g-trimming, deduplication and PE read merging (fastp) -> 'cleaning' of sequence headers -> MGE
   - 'concat' = gunzip and 'cleaning' of sequence headers -> adapter- and poly g-trimming, and deduplication (fastp) -> concatenation of PE reads -> read trimming (Trim Galore (cutadapt)) -> MGE
-![image](https://github.com/user-attachments/assets/21ce71b2-42df-4442-bcde-d41ee89fa3c1)
+![image](https://github.com/user-attachments/assets/f6cff998-3972-4137-8f4d-fb12b7c03fe8)
+
 - Update config.yaml with neccessary paths and variables.
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate run paramters.
   - See [fasta_cleaner.py repository](https://github.com/bge-barcoding/fasta-cleaner) for information on filtering variables and thresholds (default below suitable in most cases).
@@ -186,18 +210,6 @@ See scripts/.
 - [**mge_stats.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/mge_stats.py) = This script (incorporated into 'rule extract_stats_to_csv') uses alignment fasta files and MGE.out files to generate summary statistics for each sample.
 - [**fasta_compare.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_compare.py) = Supplementary script that can be run after the MGE pipeline is finished. It will compare barcodes produced using different parameter combinations (from one run or multiple runs) for each sample, ranks each barcode 1-5 based on [BOLD BIN criteria](https://v3.boldsystems.org/index.php/resources/handbook?chapter=2_databases.html&section=bins), and select the 'best' (BOLD BIN compliant) barcode.
 
-## Full workflow ##
-- Snakefile - The main entry point that includes all other files. It establishes the minimum Snakemake version and handles the conditional inclusion of preprocessing files based on mode. This follows a common pattern in complex workflows where the main file serves primarily as an orchestrator.
-- config.smk - Contains configuration parsing, validation, and utility functions. Placing these in a separate file is good practice as it isolates configuration management from workflow logic.
-- common.smk - Defines shared variables, directory structures, and the crucial rule all that establishes the workflow's outputs. The placement of get_mge_input here is appropriate since it's used across different workflow branches.
-- preprocessing_merge.smk and preprocessing_concat.smk - Each contains a complete set of rules for a specific processing mode. This separation allows clear visualization of each workflow path without conditional logic cluttering individual rules.
-- mge.smk - Contains the core MitoGeneExtractor rule, which is the primary computational step. Isolating this in its own file makes sense as it's a major processing step.
-- rename_concat_cons.smk - 
-- alignment_log.smk - 
-- fasta_cleaner.smk - 
-- extract_statistics.smk - 
-- cleanup.smk - Handles workflow cleanup
-![image](https://github.com/user-attachments/assets/304dd00e-1908-409d-a0b1-330eb7d9b175)
 
 
 ## To do ##
