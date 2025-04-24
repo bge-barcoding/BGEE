@@ -1,5 +1,4 @@
 # cluster_config.yaml
-
 # Sets the default parameters to fallback on if not listed for a specific rule.
 __default__:
     partition: day
@@ -8,87 +7,81 @@ __default__:
     mem: 4G
     cpus-per-task: 2
 
+# Preprocessing mode == 'merge' (or 'both)
 fastp_pe_merge:
-    job-name: fastp_merge
     mem: 8G
     cpus-per-task: 8
-
 clean_headers_merge:
-    job-name: clean_headers
     mem: 2G
     cpus-per-task: 4
-
-aggregate_clean_headers_logs:
-    job-name: agg_clean_logs
+aggregate_clean_headers_logs_merge:
     mem: 2G
     cpus-per-task: 2
 
-gunzip_and_clean_headers:
-    job-name: gunzip_clean_headers
-    mem: 2G
-    cpus-per-task: 4
-
-aggregate_gunzip_logs:
-    job-name: agg_gunzip_logs
-    mem: 2G
-    cpus-per-task: 2
-
+# Preprocessing mode == 'concat' (or 'both)
 fastp_pe_concat:
-    job-name: fastp_concat
     mem: 2G
     cpus-per-task: 4
-
 fastq_concat:
-    job-name: fastq_concat
     mem: 8G
     cpus-per-task: 4
-
 aggregate_concat_logs:
-    job-name: agg_concat_logs
     mem: 2G
     cpus-per-task: 2
-
 quality_trim:
-    job-name: quality_trim
     mem: 4G
-    cpus-per-task: 4
-
+    cpus-per-task: 2
 aggregate_trim_galore_logs:
-    job-name: agg_trim_logs
     mem: 2G
     cpus-per-task: 2
 
-MitoGeneExtractor:
-    job-name: MGE
-    mem: 24G
-    cpus-per-task: 4
-
-rename_fasta_headers:
-    job-name: rename_cons_headers
-    mem: 4G
+# MGE 
+MitoGeneExtractor_merge:  
+    mem: 12G
+    cpus-per-task: 8
+MitoGeneExtractor_concat:
+    mem: 12G
     cpus-per-task: 8
 
-concatenate_fasta:
-    job-name: concat_cons
-    mem: 8G
-    cpus-per-task: 8
-
-create_alignment_log:
-    job-name: gen_align_log
+# Postprocessing
+rename_and_combine_cons_merge:
     mem: 2G
     cpus-per-task: 4
+rename_and_combine_cons_concat: 
+    mem: 2G
+    cpus-per-task: 4
+create_alignment_log_merge:
+    mem: 2G
+    cpus-per-task: 2
+create_alignment_log_concat: 
+    mem: 2G
+    cpus-per-task: 2
 
-fasta_cleaner:
-    job-name: fasta_cleaner
-    mem: 24G
-    cpus-per-task: 16
+# Fasta cleaner
+fasta_cleaner_merge:
+    mem: 28G
+    cpus-per-task: 24
+fasta_cleaner_concat:
+    mem: 28G
+    cpus-per-task: 24
 
-extract_stats_to_csv:
-    job-name: mge_stats
+# Extract statistics
+extract_stats_to_csv_merge:  
+    mem: 8G
+    cpus-per-task: 2
+extract_stats_to_csv_concat:
+    mem: 8G
+    cpus-per-task: 2
+combine_stats_files:  
+    mem: 1G
+    cpus-per-task: 1
+    
+# Fasta_compare
+fasta_compare:
     mem: 8G
     cpus-per-task: 4
 
+# Cleanup
 cleanup_files:
-    job-name: cleanup
-    mem: 4G
+    mem: 2G
     cpus-per-task: 2
