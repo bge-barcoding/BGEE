@@ -1,12 +1,3 @@
-import os
-import csv
-import argparse
-import re
-import logging
-from Bio import SeqIO
-import numpy as np
-import glob
-
 """
 FASTA Sequence Analysis and Summary Tool
 --------------------------------------
@@ -54,6 +45,18 @@ The script generates the following metrics for each sample:
     - cleaning_cov_max: Maximum coverage after cleaning
     - cleaning_cov_min: Minimum coverage after cleaning
 """
+
+
+
+import os
+import csv
+import argparse
+import re
+import logging
+from Bio import SeqIO
+import numpy as np
+import glob
+
 
 # Set up logging
 logger = logging.getLogger('mge_stats')
@@ -163,8 +166,11 @@ def parse_cleaning_csv(file_path):
 
 def process_fasta_file(file_path):
     """Process a FASTA file and extract sequence statistics."""
+    logger.info(f"Processing file: {file_path}")  # Log which file is being processed
+    
     if os.path.getsize(file_path) == 0:
         base_id, _, _ = extract_sample_info(os.path.basename(file_path))
+        logger.warning(f"Empty file: {file_path}")
         return {
             'ID': base_id,
             'n_reads_aligned': 0,
@@ -179,10 +185,19 @@ def process_fasta_file(file_path):
             sequences = list(SeqIO.parse(handle, 'fasta'))
     except Exception as e:
         logger.error(f"Error reading file {file_path}: {e}")
-        return None
+        base_id, _, _ = extract_sample_info(os.path.basename(file_path))
+        return {
+            'ID': base_id,
+            'n_reads_aligned': 0,
+            'cov_min': 0,
+            'cov_max': 0,
+            'cov_avg': 0,
+            'cov_med': 0,
+        }
 
     if not sequences:
         base_id, _, _ = extract_sample_info(os.path.basename(file_path))
+        logger.warning(f"No sequences found in file: {file_path}")
         return {
             'ID': base_id,
             'n_reads_aligned': 0,
@@ -196,16 +211,78 @@ def process_fasta_file(file_path):
     for seq in sequences:
         if seq.id not in unique_sequences:
             unique_sequences[seq.id] = seq
+    
+    # Detect sequence length mismatches
+    sequence_lengths = [len(seq.seq) for seq in unique_sequences.values()]
+    if len(set(sequence_lengths)) > 1:
+        logger.error(f"Error in file {file_path}: Found sequences with different lengths: {set(sequence_lengths)}")
+        # Log some example sequence IDs with their lengths
+        for seq_id, seq in list(unique_sequences.items())[:5]:  # Log up to 5 examples
+            logger.error(f"  Sequence {seq_id}: length {len(seq.seq)}")
+        
+        # Use the most common length
+        from collections import Counter
+        most_common_length = Counter(sequence_lengths).most_common(1)[0][0]
+        logger.info(f"Using most common length: {most_common_length} for file {file_path}")
+        
+        # Filter sequences to only include those with the most common length
+        filtered_sequences = {seq_id: seq for seq_id, seq in unique_sequences.items() 
+                             if len(seq.seq) == most_common_length}
+        
+        if not filtered_sequences:
+            logger.error(f"No sequences with common length in {file_path}")
+            base_id, _, _ = extract_sample_info(os.path.basename(file_path))
+            return {
+                'ID': base_id,
+                'n_reads_aligned': len(unique_sequences),
+                'cov_min': 0,
+                'cov_max': 0,
+                'cov_avg': 0,
+                'cov_med': 0,
+            }
+        
+        logger.info(f"Filtered from {len(unique_sequences)} to {len(filtered_sequences)} sequences")
+        unique_sequences = filtered_sequences
 
     sequence_count = len(unique_sequences)
-    coverage = np.zeros(len(next(iter(unique_sequences.values())).seq))
-    for seq in unique_sequences.values():
-        coverage += np.array([1 if base != '-' else 0 for base in seq.seq])
+    
+    try:
+        first_seq = next(iter(unique_sequences.values()))
+        coverage = np.zeros(len(first_seq.seq))
+        
+        for seq_id, seq in unique_sequences.items():
+            try:
+                seq_array = np.array([1 if base != '-' else 0 for base in seq.seq])
+                if coverage.shape != seq_array.shape:
+                    logger.error(f"Shape mismatch in {file_path}: Expected {coverage.shape}, got {seq_array.shape} for sequence {seq_id}")
+                    # Skip this sequence
+                    continue
+                coverage += seq_array
+            except Exception as e:
+                logger.error(f"Error processing sequence {seq_id} in file {file_path}: {e}")
+                # Skip this sequence and continue with others
+                continue
 
-    min_coverage = np.min(coverage)
-    max_coverage = np.max(coverage)
-    mean_coverage = np.mean(coverage)
-    median_coverage = np.median(coverage)
+        # Calculate coverage statistics
+        if len(coverage) > 0:
+            min_coverage = np.min(coverage)
+            max_coverage = np.max(coverage)
+            mean_coverage = np.mean(coverage)
+            median_coverage = np.median(coverage)
+        else:
+            min_coverage = max_coverage = mean_coverage = median_coverage = 0
+            
+    except Exception as e:
+        logger.error(f"Error calculating coverage for file {file_path}: {e}")
+        base_id, _, _ = extract_sample_info(os.path.basename(file_path))
+        return {
+            'ID': base_id,
+            'n_reads_aligned': sequence_count,
+            'cov_min': 0,
+            'cov_max': 0,
+            'cov_avg': 0,
+            'cov_med': 0,
+        }
 
     base_id, _, _ = extract_sample_info(os.path.basename(file_path))
 
