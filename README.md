@@ -1,4 +1,4 @@
-# MGE_snakemake_workflow
+# Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens. 
 
 <p align="center">
