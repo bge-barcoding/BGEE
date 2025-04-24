@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-rename_fasta_headers.py - A script to rename FASTA headers in consensus files
+A script to rename FASTA headers in consensus files
 
 This script renames the headers in FASTA consensus files based on standardized naming conventions
 and concatenates them directly into a single multi-fasta file without creating intermediate files.
-It's designed to be called by a Snakemake rule.
 """
 
 import os
