@@ -1,29 +1,3 @@
-# =============================================================================
-# Imports and Setup
-# =============================================================================
-import os
-import sys
-import re
-import csv
-import argparse
-from datetime import datetime
-from typing import List, Dict, Tuple, Optional, Any, NamedTuple
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
-from Bio.Align import MultipleSeqAlignment
-from Bio import AlignIO
-from Bio.Align import AlignInfo
-import numpy as np
-from collections import Counter, defaultdict
-import traceback
-import multiprocessing as mp
-from functools import partial
-import concurrent.futures
-from itertools import islice
-
-
-
 """
 FASTA Sequence Cleaner and Analysis Tool
 
@@ -101,6 +75,33 @@ Authors: B. Price & D. Parsons @ NHMUK
 Version: 1.0.2
 Licence: MIT
 """
+
+
+
+# =============================================================================
+# Imports and Setup
+# =============================================================================
+import os
+import sys
+import re
+import csv
+import argparse
+from datetime import datetime
+from typing import List, Dict, Tuple, Optional, Any, NamedTuple
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.Align import MultipleSeqAlignment
+from Bio import AlignIO
+from Bio.Align import AlignInfo
+import numpy as np
+from collections import Counter, defaultdict
+import traceback
+import multiprocessing as mp
+from functools import partial
+import concurrent.futures
+from itertools import islice
+
 
 
 # =============================================================================
@@ -989,7 +990,7 @@ def concatenate_consensus_sequences(consensus_dir: str, output_file: str, prepro
     """
     consensus_files = [
         f for f in os.listdir(consensus_dir)
-        if f.lower().endswith(('_consensus.fasta', '_consensus.fas', '_consensus.fa'))
+        if f.lower().endswith(('_consensus.fasta', '_consensus.fas', '_consensus.fa', '_fcleaner.fasta', '_fcleaner.fas', '_fcleaner.fa'))
     ]
     
     if not consensus_files:
@@ -1017,12 +1018,13 @@ def concatenate_consensus_sequences(consensus_dir: str, output_file: str, prepro
                     else:
                         outfile.write(line)
 
-def extract_log_statistics(log_file_path: str) -> Dict[str, Any]:
+def extract_log_statistics(log_file_path: str, preprocessing_mode: str = 'concat') -> Dict[str, Any]:
     """
     Extract statistics from a sample log file.
     
     Args:
         log_file_path: Path to the log file
+        preprocessing_mode: 'concat' or 'merge' to determine if _merge suffix is added
     
     Returns:
         Dictionary containing extracted statistics
@@ -1047,7 +1049,12 @@ def extract_log_statistics(log_file_path: str) -> Dict[str, Any]:
             # Extract sample name from "Processing Sample:" line
             sample_match = re.search(r"Processing Sample: (.+)$", log_content, re.MULTILINE)
             if sample_match:
-                stats['sample_name'] = sample_match.group(1)
+                base_name = sample_match.group(1)
+                # Append _fcleaner to the basename
+                stats['sample_name'] = f"{base_name}_fcleaner"
+                # If in merge mode, also append _merge
+                if preprocessing_mode == 'merge':
+                    stats['sample_name'] += "_merge"
             
             # Extract input sequences
             input_match = re.search(r"Input sequences: (\d+)", log_content)
@@ -1094,10 +1101,15 @@ def extract_log_statistics(log_file_path: str) -> Dict[str, Any]:
     
     return stats
 
-def generate_combined_statistics(output_dir: str) -> None:
+
+def generate_combined_statistics(output_dir: str, preprocessing_mode: str = 'concat') -> None:
     """
     Generate a combined statistics CSV file for all processed samples,
     including those that were skipped during the current run.
+    
+    Args:
+        output_dir: Output directory containing the logs, consensus_seqs, etc.
+        preprocessing_mode: 'concat' or 'merge' mode to determine if _merge is appended
     """
     
     # Define paths
@@ -1121,14 +1133,17 @@ def generate_combined_statistics(output_dir: str) -> None:
     for log_file in log_files:
         log_path = os.path.join(logs_dir, log_file)
         
-        # Extract statistics from log file
-        stats = extract_log_statistics(log_path)
+        # Extract statistics from log file, passing preprocessing_mode
+        stats = extract_log_statistics(log_path, preprocessing_mode)
         
         # Get sample name from log statistics
         sample_name = stats['sample_name']
         
-        # Find corresponding consensus file
-        consensus_file = f"{sample_name}_consensus.fasta"
+        # Find corresponding consensus file - using the updated sample name format
+        # Note: The consensus files are still named with the original base_name + _consensus.fasta
+        # So we need to strip _fcleaner(_merge) to find the file
+        original_sample_name = sample_name.replace("_fcleaner_merge", "").replace("_fcleaner", "")
+        consensus_file = f"{original_sample_name}_consensus.fasta"
         consensus_path = os.path.join(consensus_dir, consensus_file)
         
         # Count ambiguous bases in consensus sequence if file exists
@@ -1678,13 +1693,13 @@ def parallel_process_directory(args: argparse.Namespace) -> None:
     
     # Write the summary file
     total_stats = defaultdict(int)
-    total_stats['processed_files'] = len(processed_files) + len(skipped_files)  # Include skipped files
+    total_stats['processed_files'] = len(processed_files) + len(skipped_files) 
     total_stats['error_files'] = len(error_files)
     write_summary(total_stats, output_subdirs['logs'])
     
     # Generate combined statistics CSV file
     print("\nGenerating combined statistics CSV file...")
-    generate_combined_statistics(args.output_dir)
+    generate_combined_statistics(args.output_dir, args.preprocessing)
 
 
 
