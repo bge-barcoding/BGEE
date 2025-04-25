@@ -8,12 +8,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Cluster configuration](#cluster-configuration)
  - [Results structure](#results-structure)
  - [Cluster](#running-gene_fetch-on-a-cluster)
- - [Supported targets](#supported-targets)
- - [Notes](#notes)
- - [Benchmarking](#benchmarking)
- - [Future developments](#future-developments)
- - [Contributions and citation](#contributions-and-citations)
-
+ - 
 
 # Requirements #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
