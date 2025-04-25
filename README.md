@@ -29,7 +29,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
     - fastp_pe_merge - Adapter, trimming, quality trimming, Poly-G trimming, deduplication, and merging of paired-end reads (fastp).
     - clean_headers_merge - Cleans sequence headers, as required by MitoGeneExtractor.
     - Aggregate_clean_headers_logs - Combines individual header cleaning logs into a single log file.
-![image](https://github.com/user-attachments/assets/f6cff998-3972-4137-8f4d-fb12b7c03fe8)
+![image](https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96)
 2. MitoGeneExtractor (MGE) -  Extracts gene of interest from processed reads by aligning them to protein references using Exonerate.
 3. rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file (uses supplementary [rename_headers.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/rename_headers.py).
 4. create_alignment_log - Creates a list of MGE alignment files for downstream processing.
