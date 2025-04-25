@@ -7,8 +7,8 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Running](#running)
  - [Cluster configuration](#cluster-configuration)
  - [Results structure](#results-structure)
- - [Cluster](#running-gene_fetch-on-a-cluster)
- - 
+ - [Integrated and supplementary scripts](#Integrated-and-supplementary-scripts)
+ - [Contributing](#Contributing)
 
 # Requirements #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
@@ -209,7 +209,7 @@ results/
 ```
 
 # Integrated and supplementary scripts #
-See scripts/.
+See scripts/
 - [**1_gene_fetch.py**](https://github.com/bge-barcoding/gene_fetch) = Supplementary script that fetches protein references for each sample using taxids from samples.csv to query NCBI DBs (via BioEntrez API). Fetches closest reference available to input taxid. See [1_gene_fetch.py](https://github.com/bge-barcoding/gene_fetch) github repository for more information.
 - [**rename_headers.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/rename_headers.py) = Script to rename headers of consensus sequence FASTA files and filenames.
 - [**fasta_cleaner_mge.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner_mge.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
@@ -219,16 +219,18 @@ See scripts/.
 
 
 
-## To do ##
+# Contributing #
+- Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
+- This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
+- Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
+  Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
+
+
+
+  ## To do ##
 - Split Snakefile into .smk files
 - Update test data and associated files.
 - Integrate 1_gene_fetch.py into snakefile.
 - Make Workflow Hub compatible.
 - Generate RO-crates.
   
-
-## Contributing ##
-- Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
-- This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
-- Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
-  Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
