@@ -1,9 +1,5 @@
 # Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow #
-Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens. 
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/9ecf91e4-5b6e-4d4e-bc94-78653890259a" width="500" alt="description">
-</p>
+Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens.
 
 # Contents # 
  - [Requirements](#requirements)
@@ -29,21 +25,23 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 # Workflow #
 1. Preprocessing mode:
   - 'concat':
-    - fastp_pe_concat - Adapter, trimming, quality trimming, Poly-G trimming, and deduplication of paired-end reads.
+    - fastp_pe_concat - Adapter, trimming, quality trimming, poly-g trimming, and deduplication of paired-end reads (fastp).
     - fastq_concat - Concatenates trimmed R1 and R2 files.
     - Aggregate_concat_logs - Combines individual concatenation logs into a single log file.
-    - quality_trim - Performs additional quality trimming on concatenated reads using Trim Galore.
+    - quality_trim - Performs additional quality trimming on concatenated reads (Trim Galore).
     - Aggregate_trim_galore_logs - Combines individual Trim Galore logs into a single log file.
   - 'merge:
-    - fastp_pe_merge - Adapter, trimming, quality trimming, Poly-G trimming, deduplication, and merging of paired-end reads.
+    - fastp_pe_merge - Adapter, trimming, quality trimming, Poly-G trimming, deduplication, and merging of paired-end reads (fastp).
     - clean_headers_merge - Cleans sequence headers, as required by MitoGeneExtractor.
     - Aggregate_clean_headers_logs - Combines individual header cleaning logs into a single log file.
+![image](https://github.com/user-attachments/assets/f6cff998-3972-4137-8f4d-fb12b7c03fe8)
 2. MitoGeneExtractor (MGE) -  Extracts gene of interest from processed reads by aligning them to protein references using Exonerate.
-3. rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file.
+3. rename_and_combine_con - Renames consensus sequence headers and concatenates them into a single FASTA file (uses supplementary [rename_headers.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/rename_headers.py).
 4. create_alignment_log - Creates a list of MGE alignment files for downstream processing.
-5. fasta_cleaner - Filters alignment files (using supplementary script altered from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner)) to remove low-quality, contaminant, or outlier sequences.
-6. extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report.
-7. cleanup_files - Removes temporary files and certain logs.
+5. [fasta_cleaner](https://github.com/bge-barcoding/fasta-cleaner) - Filters alignment files to remove low-quality, contaminant, or outlier sequences before consensus sequence generation.
+6. [fasta_compare](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/fasta_compare.py) - Evaluates barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and selects the best sequences according to specific (BOLD BIN) quality criteria.
+7. extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report (uses supplementary [mge_stats.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/mge_stats.py)).
+8. cleanup_files - Removes temporary files and superfluous logs.
 
 # Running: #
 ## Set up conda environment and clone this github repository ##
@@ -71,13 +69,11 @@ git status
 ## Gathering sample-specific pseudo-references using Gene Fetch ##
 - gene_fetch.py retrieves the protein pseudo-references for each sample using the samples taxonomic identifier (taxid).
 - The tool can fetch both protein and nucleotide sequences from NCBI databases for a given gene. See [gene_fetch](https://github.com/SchistoDan/gene_fetch/tree/main) repository for more information.
-- 'gene_fetch.py' also provided in scripts/.
 
 ## Customising snakemake configuration file ##
 - Pre-processing modes:
   - 'merge' = adapter- and poly g-trimming, deduplication and PE read merging (fastp) -> 'cleaning' of sequence headers -> MGE
   - 'concat' = gunzip and 'cleaning' of sequence headers -> adapter- and poly g-trimming, and deduplication (fastp) -> concatenation of PE reads -> read trimming (Trim Galore (cutadapt)) -> MGE
-![image](https://github.com/user-attachments/assets/f6cff998-3972-4137-8f4d-fb12b7c03fe8)
 
 - Update config.yaml with neccessary paths and variables.
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate run paramters.
@@ -132,21 +128,22 @@ fasta_cleaner:
 
 # Cluster configuration #
 - [snakemake.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake/snakemake.sh) cluster submission script:
-  - --cluster: Defines how jobs are submitted to SLURM.
-    - --parsable: Tells sbatch to only return the job ID.
-    - --signal=USR2@90: Sends a signal 90 seconds before job time limit (for clean termination).
-    - --cluster-config: Lists path to cluster configuration file (see below for explanation) and enables use of rule-specific resource requirements.
-    - --mem={resources.mem_mb}MB: Dynamically sets memory allocation by using the mem parameter from each snakemake rule.
-    - --cpus-per-task={threads}: Uses the threads parameter from each snakemake rule.
-    - --output=slurm-%j-%x.out & --error=slurm-%j-%x.err: Sets naming convention for .out and .err files of individual jobs. '%j' = Job ID. '%x' = Job name.
-  - --snakefile: List path to Snakefile.
-  - --configfile: List path to snakemake workflow configuration file.
-  - --latency-wait: Required when working on a distributed filesystem (e.g. NFS/GPFS). Set at 60 seconds by default. May be necessary to increase if experiencing latency/'missing' file issues.
-  - --rerun-incomplete: If the snakemake workflow fails or is stopped for any reason, adding this option to the run command will enable the workflow to carry on from where it stopped.
+  - `--cluster`: Defines how jobs are submitted to SLURM.
+    - `--parsable`: Tells sbatch to only return the job ID.
+    - `--signal=USR2@90`: Sends a signal 90 seconds before job time limit (for clean termination).
+    - `--cluster-config`: Lists path to cluster configuration file (see below for explanation) and enables use of rule-specific resource requirements.
+    - `--mem={resources.mem_mb}MB`: Dynamically sets memory allocation by using the mem parameter from each snakemake rule.
+    - `--cpus-per-task={threads}`: Uses the threads parameter from each snakemake rule.
+    - `--output=slurm-%j-%x.out` & `--error=slurm-%j-%x.err`: Sets naming convention for .out and .err files of individual jobs. '%j' = Job ID. '%x' = Job name.
+  - `--snakefile`: Path to Snakefile.
+  - `--configfile`: Path to snakemake workflow configuration file.
+  - `--latency-wait`: Required when working on a distributed filesystem (e.g. NFS/GPFS). Set at 60 seconds by default. May be necessary to increase if experiencing latency/'missing' file issues.
+  - `--rerun-incomplete`: If the snakemake workflow fails or is stopped for any reason, adding this option to the run command will enable the workflow to carry on from where it stopped.
 
-- [cluster_config.yaml]()
+- [cluster_config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/cluster_config.yaml)
   - Enables job-specific resource allocation based on job requirements and system capability. 
   - Default: Sets the default/minimum parameters to fallback on if not listed for a specific rule
+
 - The aforementioned files will need tweaking to run on your cluster set up.
 
 ## Resource allocation ##
@@ -154,7 +151,7 @@ fasta_cleaner:
   - 'cpus-per-task' and 'mem' only apply to the 'master' job that coordinates the workflow and submits individual jobs to the job scheduler. Specified resources are only allocated for this 'master' job. Therefore, only 5-15G of memory and 2-4 CPUs are likely needed. It is recommended to set a relatively 'long' partition (e.g. several days-week) for this 'master' job, as it will be active for the entire run.
 - Rule-specific resources in Snakefile:
   - Each rule can specify threads and memory resources (in Mb). These are the base values Snakemake uses initially.
-- Cluster config values:
+- [Cluster config](https://github.com/SchistoDan/BGEE/blob/main/config/cluster_config.yaml) values:
   - The 'cpus-per-task' and 'mem' values override or supplement rule-specific values in the Snakefile. If a rule doesn't specify resources, it will fallback to the listed defaults.
 - Global limits:
   - '--cores': Limits total cores used across all concurrent jobs in the workflow.
@@ -237,5 +234,6 @@ See scripts/.
 
 ## Contributing ##
 - Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
+- This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
 - Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
