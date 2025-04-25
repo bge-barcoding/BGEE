@@ -1,10 +1,32 @@
-# Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow
+# Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow #
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens. 
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/9ecf91e4-5b6e-4d4e-bc94-78653890259a" width="500" alt="description">
 </p>
 
+# Contents # 
+ - [Requirements](#requirements)
+ - [Workflow](#workflow)
+ - [Running](#running)
+ - [Cluster configuration](#cluster-configuration)
+ - [Results structure](#results-structure)
+ - [Cluster](#running-gene_fetch-on-a-cluster)
+ - [Supported targets](#supported-targets)
+ - [Notes](#notes)
+ - [Benchmarking](#benchmarking)
+ - [Future developments](#future-developments)
+ - [Contributions and citation](#contributions-and-citations)
+
+
+# Requirements #
+- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
+- Paired-end reads in .fastq.gz or .fastq format.
+- samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/MGE_snakemake_workflow?tab=readme-ov-file#2-generate-samplescsv)).
+- sequence_references_file.csv (Either manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
+- Activated conda env (see mge_env.yaml)
+
+# Workflow #
 1. Preprocessing mode:
   - 'concat':
     - fastp_pe_concat - Adapter, trimming, quality trimming, Poly-G trimming, and deduplication of paired-end reads.
@@ -23,16 +45,8 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 6. extract_stats_to_csv - Compiles statistics from several fastp trimming, MGE, and fasta_cleaner output files into a CSV report.
 7. cleanup_files - Removes temporary files and certain logs.
 
-  
-# Requirements: #
-- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. See [installation](https://github.com/cmayer/MitoGeneExtractor?tab=readme-ov-file#installation) instructions.
-- Paired-end reads in .fastq.gz or .fastq format.
-- samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/MGE_snakemake_workflow?tab=readme-ov-file#2-generate-samplescsv)).
-- sequence_references_file.csv (Either manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
-- Activated conda env (see mge_env.yaml)
-
 # Running: #
-## 1. Set up conda environment and clone this github repository ##
+## Set up conda environment and clone this github repository ##
 - [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
 git clone https://github.com/bge-barcoding/MGE_snakemake_workflow.git [path/to/where/you/want/to/install/]
@@ -41,7 +55,7 @@ conda env create -f /workflow/scripts/mge_env.yaml
 git status
 ```
 
-## 2. Generate samples.csv ###
+## Generate samples.csv ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
 - Must contain ID, forward (read paths), reverse (read paths), and taxid columns (see below for example). Column 1 can be named 'ID', 'process_id', 'Process ID', 'process id', 'Process id', 'PROCESS ID', 'sample', 'SAMPLE', or 'Sample'.
 - Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. It is therefore recommended that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
@@ -54,12 +68,12 @@ git status
 | BSNHM038-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 177627 |
 | BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 3084599 |
 
-## 3. Gathering sample-specific pseudo-references using Gene Fetch ##
+## Gathering sample-specific pseudo-references using Gene Fetch ##
 - gene_fetch.py retrieves the protein pseudo-references for each sample using the samples taxonomic identifier (taxid).
 - The tool can fetch both protein and nucleotide sequences from NCBI databases for a given gene. See [gene_fetch](https://github.com/SchistoDan/gene_fetch/tree/main) repository for more information.
 - 'gene_fetch.py' also provided in scripts/.
 
-## 4. Customising snakemake configuration file ##
+## Customising snakemake configuration file ##
 - Pre-processing modes:
   - 'merge' = adapter- and poly g-trimming, deduplication and PE read merging (fastp) -> 'cleaning' of sequence headers -> MGE
   - 'concat' = gunzip and 'cleaning' of sequence headers -> adapter- and poly g-trimming, and deduplication (fastp) -> concatenation of PE reads -> read trimming (Trim Galore (cutadapt)) -> MGE
@@ -116,7 +130,7 @@ fasta_cleaner:
   reference_dir: null 
 ```
 
-## 5. Run snakemake workflow (via cluster) ##
+# Cluster configuration #
 - [snakemake.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake/snakemake.sh) cluster submission script:
   - --cluster: Defines how jobs are submitted to SLURM.
     - --parsable: Tells sbatch to only return the job ID.
@@ -135,7 +149,7 @@ fasta_cleaner:
   - Default: Sets the default/minimum parameters to fallback on if not listed for a specific rule
 - The aforementioned files will need tweaking to run on your cluster set up.
 
-### Resource allocation ###
+## Resource allocation ##
 - SBATCH scheduler job parameters:
   - 'cpus-per-task' and 'mem' only apply to the 'master' job that coordinates the workflow and submits individual jobs to the job scheduler. Specified resources are only allocated for this 'master' job. Therefore, only 5-15G of memory and 2-4 CPUs are likely needed. It is recommended to set a relatively 'long' partition (e.g. several days-week) for this 'master' job, as it will be active for the entire run.
 - Rule-specific resources in Snakefile:
@@ -148,7 +162,7 @@ fasta_cleaner:
 
 - **A workflow running 570 samples (genome skims) in 'concat' preprocessing mode and using default MGE parameters (r:1, s:100) ran end-to-end in approximately 11.5 hours (using listed resources allocated in cluster_config.yaml)**
   
-## 6. Results structure ##
+# Results structure #
 ```
 results/
 ├── alignment/                      # MGE sequence alignments
@@ -202,28 +216,26 @@ results/
 └── <run_name>.csv                  # Summary stats file produced by extract_stats_to_csv rule (see below for example)
 ```
 
-## Integrated and supplementary scripts ##
+# Integrated and supplementary scripts #
 See scripts/.
 - [**1_gene_fetch.py**](https://github.com/bge-barcoding/gene_fetch) = Supplementary script that fetches protein references for each sample using taxids from samples.csv to query NCBI DBs (via BioEntrez API). Fetches closest reference available to input taxid. See [1_gene_fetch.py](https://github.com/bge-barcoding/gene_fetch) github repository for more information.
 - [**rename_headers.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/rename_headers.py) = Script to rename headers of consensus sequence FASTA files and filenames.
-- [**fasta_cleaner.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
+- [**fasta_cleaner_mge.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner_mge.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
 - [**mge_stats.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/mge_stats.py) = This script (incorporated into 'rule extract_stats_to_csv') uses alignment fasta files and MGE.out files to generate summary statistics for each sample.
-- [**fasta_compare.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_compare.py) = Supplementary script that can be run after the MGE pipeline is finished. It will compare barcodes produced using different parameter combinations (from one run or multiple runs) for each sample, ranks each barcode 1-5 based on [BOLD BIN criteria](https://v3.boldsystems.org/index.php/resources/handbook?chapter=2_databases.html&section=bins), and select the 'best' (BOLD BIN compliant) barcode.
+- [csv_combiner_mge.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/csv_combiner_mge.py) = This script combines both summary stats files from 'concat' and 'merge' runs of the workflow.
+- [**fasta_compare.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_compare.py) = Supplementary script that can be run after the core MGE pipeline is finished. It will compare barcodes produced using different parameter combinations (from one run or multiple runs) for each sample, ranks each barcode 1-5 based on [BOLD BIN criteria](https://v3.boldsystems.org/index.php/resources/handbook?chapter=2_databases.html&section=bins), and select the 'best' (BOLD BIN compliant) barcode.
 
 
 
 ## To do ##
-- Split Snakefile into rules (goes towards Workflow Hub compatibility)
+- Split Snakefile into .smk files
 - Update test data and associated files.
 - Integrate 1_gene_fetch.py into snakefile.
 - Make Workflow Hub compatible.
 - Generate RO-crates.
   
-## Test run ##
-- Raw reads for 12 test samples can be downloaded [here](https://naturalhistorymuseum-my.sharepoint.com/personal/b_price_nhm_ac_uk/_layouts/15/onedrive.aspx?ct=1723035606962&or=Teams%2DHL&ga=1&LOF=1&id=%2Fpersonal%2Fb%5Fprice%5Fnhm%5Fac%5Fuk%2FDocuments%2F%5Ftemp%2F%5FBGEexamples4Felix%2F1%5Fraw%5Fdata). Each read pair must be in seperate subdirectories under a parent directory that can be called anything
-- samples sheet (BGE_test_samples.csv) provided (paths to reads and references need to be altered to where you stored the reads)
-- protein_references sheet (gene_fetch_BGE_test_data.csv) provided (in protein_references/).
-
 
 ## Contributing ##
 - Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
+- Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
+  Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
