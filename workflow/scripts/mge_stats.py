@@ -155,7 +155,24 @@ def parse_cleaning_csv(file_path):
                         'cov_max': float(row.get('cov_max', 0)),
                         'cov_min': float(row.get('cov_min', 0))
                     }
+                    
+                    # Store under original sample name
                     cleaning_data[sample_name] = cleaning_stats
+                    
+                    # Store under versions without suffixes
+                    # Handle _fcleaner suffix
+                    if '_fcleaner' in sample_name:
+                        clean_name = sample_name.replace('_fcleaner', '')
+                        cleaning_data[clean_name] = cleaning_stats
+                    
+                    # Handle _fcleaner_merge suffix
+                    if '_fcleaner_merge' in sample_name:
+                        clean_name = sample_name.replace('_fcleaner_merge', '')
+                        cleaning_data[clean_name] = cleaning_stats
+                        
+                        # Also store without _merge suffix in case there's inconsistency
+                        clean_name_alt = sample_name.replace('_merge', '')
+                        cleaning_data[clean_name_alt] = cleaning_stats
             
         logger.info(f"Parsed cleaning data for {len(cleaning_data)} samples from CSV")
         return cleaning_data
@@ -376,16 +393,28 @@ def summarise_fasta(log_file, output_file, out_file_dir, cleaning_csv=None):
                     result['n_reads_skipped'] = ''
 
                 # Look for the sample in the cleaning data - try different format variants
-                # Use full_id for matching with exact sample_name
+                # Try multiple formats including different suffixes
                 sample_key = full_id
-                # Also try matching with the format used in the provided CSV examples
                 alt_key = f"{full_id}_{base_id}"
+                fcleaner_key = f"{full_id}_{base_id}_fcleaner"
+                fcleaner_merge_key = f"{full_id}_{base_id}_fcleaner_merge"
                 
-                # First try exact match with full_id
-                cleaning_stats = cleaning_data.get(sample_key, None)
-                # If not found, try the alternative key
-                if cleaning_stats is None:
-                    cleaning_stats = cleaning_data.get(alt_key, {})
+                # Try each key in sequence
+                cleaning_stats = None
+                for key in [sample_key, alt_key, fcleaner_key, fcleaner_merge_key]:
+                    if key in cleaning_data:
+                        cleaning_stats = cleaning_data[key]
+                        logger.info(f"Found cleaning stats using key: {key}")
+                        break
+                
+                if not cleaning_stats:
+                    # Additional debug: list some of the keys actually available in cleaning_data
+                    if cleaning_data:
+                        sample_keys = list(cleaning_data.keys())[:10]  # Show first 10 keys
+                        logger.warning(f"No cleaning stats found for {base_id}. Available keys include: {sample_keys}")
+                    else:
+                        logger.warning(f"No cleaning stats found for {base_id} and cleaning_data is empty")
+                    cleaning_stats = {}
                 
                 # Add cleaning stats with renamed columns
                 result['cleaning_input_reads'] = cleaning_stats.get('input_reads', '')
