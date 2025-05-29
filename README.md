@@ -13,9 +13,9 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 # Requirements #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. Version 1.9.5 release can be downloaded from [here](https://github.com/cmayer/MitoGeneExtractor/releases/tag/v1.9.5).
 - Paired-end reads in .fastq.gz or .fastq format.
-- samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/MGE_snakemake_workflow?tab=readme-ov-file#2-generate-samplescsv)).
+- samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)).
 - sequence_references_file.csv (Either manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
-- Activated conda env (see mge_env.yaml)
+- Activated conda env (see bgee_env.yaml)
 
 # Workflow #
 1. Preprocessing mode (both pre-rpcessing modes run in parallel):
