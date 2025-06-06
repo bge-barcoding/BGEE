@@ -21,12 +21,20 @@ Features:
 
 Ranking Criteria:
 ----------------
-Barcode Rank (1-6, lower is better):
+Standard Barcode Rank (1-6, lower is better):
 1: No ambiguous bases, longest stretch ≥ 650
 2: No ambiguous bases, longest stretch ≥ 500
 3: No ambiguous bases, 300 ≤ longest stretch ≤ 499
 4: No ambiguous bases, 1 ≤ longest stretch ≤ 299
 5: Has ambiguous bases
+6: Other cases
+
+Relaxed Barcode Rank (1-6, lower is better, enabled with --relaxed):
+1: No ambiguous bases, longest stretch ≥ 500 (BIN compliant)
+2: No ambiguous bases, 200 ≤ longest stretch ≤ 499 (good but no BIN)
+3: No ambiguous bases, 100 ≤ longest stretch ≤ 199 (not great, better than nothing!)
+4: Has <6 ambiguous bases, longest stretch ≥ 500
+5: Has <6 ambiguous bases, longest stretch ≥ 300
 6: Other cases
 
 Full Sequence Rank (1-3, lower is better):
@@ -43,6 +51,8 @@ Input Parameters:
 --target/-t: Target genetic marker (cox1/COI, rbcl, or matk)
 
 Optional:
+--rank: Maximum acceptable barcode rank for sequence selection (default: 3)
+--relaxed: Use relaxed barcode ranking criteria for more permissive selection
 --log-file LOG_FILE: Specify a custom path for the log file (default: creates timestamped log in current directory)
 --verbose, -v: Enable detailed debug logging
 
@@ -50,6 +60,9 @@ Examples:
 --------
 Basic usage with cox1 target:
     python fasta_compare.py --output-csv results.csv --output-fasta best.fasta --output-barcode barcode.fasta --input sample1.fasta sample2.fasta --target cox1
+
+With custom rank threshold and relaxed criteria:
+    python fasta_compare.py --output-csv results.csv --output-fasta best.fasta --output-barcode barcode.fasta --input sample1.fasta sample2.fasta --target cox1 --rank 2 --relaxed
 
 Dependencies:
 ------------
@@ -198,13 +211,14 @@ def trim_n_characters(sequence):
     return sequence[start:end + 1]
     
 
-def analyse_fasta(file_path, target_marker):
+def analyse_fasta(file_path, target_marker, use_relaxed_ranking=False):
     """
     Analyse a FASTA file and extract various metrics from each sequence.
 
     Parameters:
         file_path (str): The path to the FASTA file to be analysed.
         target_marker (str): The target genetic marker (cox1, rbcl, matk)
+        use_relaxed_ranking (bool): Whether to use relaxed barcode ranking criteria
 
     Returns:
         dict: A dictionary containing analysis results for each sequence in the FASTA file.
@@ -267,7 +281,10 @@ def analyse_fasta(file_path, target_marker):
                 barcode_longest_stretch = max(len(s) for s in re.split('-|~', subseq))
 
                 # Determine ranks
-                barcode_rank = calculate_barcode_rank(barcode_ambiguous_bases, barcode_longest_stretch)
+                if use_relaxed_ranking:
+                    barcode_rank = calculate_barcode_rank_relaxed(barcode_ambiguous_bases, barcode_longest_stretch)
+                else:
+                    barcode_rank = calculate_barcode_rank(barcode_ambiguous_bases, barcode_longest_stretch)
                 full_rank = calculate_full_rank(ambiguous_bases)
 
                 # Store results
@@ -301,7 +318,7 @@ def analyse_fasta(file_path, target_marker):
 
 
 def calculate_barcode_rank(barcode_ambiguous_bases, barcode_longest_stretch):
-    """Calculate barcode rank based on criteria."""
+    """Calculate barcode rank based on standard criteria."""
     if barcode_ambiguous_bases == 0:
         if barcode_longest_stretch >= 650:
             return 1
@@ -312,6 +329,23 @@ def calculate_barcode_rank(barcode_ambiguous_bases, barcode_longest_stretch):
         elif 1 <= barcode_longest_stretch <= 299:
             return 4
     return 5 if barcode_ambiguous_bases >= 1 else 6
+
+
+def calculate_barcode_rank_relaxed(barcode_ambiguous_bases, barcode_longest_stretch):
+    """Calculate barcode rank based on relaxed criteria."""
+    if barcode_ambiguous_bases == 0:
+        if barcode_longest_stretch >= 500:
+            return 1
+        elif 200 <= barcode_longest_stretch <= 499:
+            return 2
+        elif 100 <= barcode_longest_stretch <= 199:
+            return 3
+    elif barcode_ambiguous_bases < 6:
+        if barcode_longest_stretch >= 500:
+            return 4
+        elif barcode_longest_stretch >= 300:
+            return 5
+    return 6
 
 
 def calculate_full_rank(ambiguous_bases):
@@ -453,13 +487,14 @@ def format_sequence_id(process_id, parameters):
     return f"{process_id}_{parameters}" if parameters else process_id
 
 
-def select_sequences_for_process(results):
+def select_sequences_for_process(results, max_barcode_rank):
     """
     Select the best sequences for a process based on ranking criteria.
     First tries to find sequences with full_rank 1, then falls back to full_rank 2 if necessary.
     
     Parameters:
         results (list): List of sequence results for a process
+        max_barcode_rank (int): Maximum acceptable barcode rank
         
     Returns:
         tuple: (best_full_sequence, best_barcode_sequence) or (None, None) if no qualifying sequences
@@ -467,7 +502,7 @@ def select_sequences_for_process(results):
     #First try to find sequences with full_rank 1
     rank1_sequences = [
         result for result in results
-        if (result['full_rank'] == 1 and result['barcode_rank'] in [1, 2, 3])
+        if (result['full_rank'] == 1 and result['barcode_rank'] <= max_barcode_rank)
     ]
     
     #If we found rank 1 sequences, use those
@@ -483,7 +518,7 @@ def select_sequences_for_process(results):
     #If no rank 1 sequences, try rank 2 sequences for barcode
     rank2_sequences = [
         result for result in results
-        if (result['full_rank'] == 2 and result['barcode_rank'] in [1, 2, 3])
+        if (result['full_rank'] == 2 and result['barcode_rank'] <= max_barcode_rank)
     ]
     
     if rank2_sequences:
@@ -498,7 +533,7 @@ def select_sequences_for_process(results):
     return None, None
 
 
-def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta, target_marker):
+def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta, target_marker, max_barcode_rank):
     """
     Write the best sequences that meet specific criteria to new FASTA files.
     Sequences are written without line breaks.
@@ -508,6 +543,7 @@ def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta, tar
         output_fasta (str): Path to output FASTA file for full sequences
         output_barcode_fasta (str): Path to output FASTA file for barcode regions
         target_marker (str): The target genetic marker (cox1, rbcl, matk)
+        max_barcode_rank (int): Maximum acceptable barcode rank
     """
     try:
         selected_full_records = []
@@ -521,7 +557,7 @@ def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta, tar
             unique_key = f"{result['file']}_{result['seq_id']}"
             
             #Select best sequences using criteria
-            best_full, best_barcode = select_sequences_for_process([result])
+            best_full, best_barcode = select_sequences_for_process([result], max_barcode_rank)
             
             if best_full or best_barcode:
                 #Process full sequence, if we have one
@@ -598,6 +634,8 @@ def main():
     parser.add_argument('--target', '-t', required=True, help='Target genetic marker (cox1/COI/CO1, rbcl/RBCL, or matk/MATK)')
     
     # Optional arguments
+    parser.add_argument('--rank', type=int, default=3, help='Maximum acceptable barcode rank for sequence selection (default: 3)')
+    parser.add_argument('--relaxed', action='store_true', help='Use relaxed barcode ranking criteria for more permissive selection')
     parser.add_argument('--log-file', help='Path to log file (optional)')
     parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
     
@@ -610,6 +648,11 @@ def main():
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     
+    # Validate rank parameter
+    if args.rank < 1 or args.rank > 6:
+        logging.error(f"Invalid rank value: {args.rank}. Must be between 1 and 6")
+        sys.exit(1)
+    
     # Normalise target marker
     target_marker = normalise_marker(args.target)
     if not target_marker:
@@ -617,7 +660,9 @@ def main():
         sys.exit(1)
     
     # Now log info after logging is set up
+    ranking_type = "relaxed" if args.relaxed else "standard"
     logging.info(f"Using target marker: {target_marker} (barcode region: {BARCODE_REGIONS[target_marker][0]+1}-{BARCODE_REGIONS[target_marker][1]})")
+    logging.info(f"Using {ranking_type} barcode ranking with rank threshold: {args.rank}")
         
     #Setup logging
     setup_logging(args.log_file)
@@ -635,7 +680,7 @@ def main():
         #Analyse each FASTA file
         for file in args.input:
             logging.info(f"Processing file: {file}")
-            results = analyse_fasta(file, target_marker)
+            results = analyse_fasta(file, target_marker, args.relaxed)
             for seq_id, result in results.items():
                 result['seq_id'] = seq_id
                 all_results.append(result)
@@ -669,7 +714,7 @@ def main():
             ) else 'no'
         
         #Write best sequences to FASTA files and get selection records
-        selection_records = write_best_sequences(best_sequences, args.output_fasta, args.output_barcode, target_marker)
+        selection_records = write_best_sequences(best_sequences, args.output_fasta, args.output_barcode, target_marker, args.rank)
 
         #Update results with new columns
         for result in all_results:
