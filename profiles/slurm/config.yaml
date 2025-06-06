@@ -1,0 +1,15 @@
+# profiles/slurm/config.yaml
+
+executor: slurm
+default-resources:
+  - slurm_partition=medium
+  - mem_mb=4096
+  - threads=4
+  - runtime=1440
+  - slurm_extra="--ntasks=1 --no-requeue --signal=USR2@90"
+    # --no-requeue: Prevents the job from being automatically requeued if it fails (clashes with snakemake retry memory scaling)
+    # --signal=USR2@90: Sets up a signal to be sent to the job when it approaches its time limit
+  
+jobs: 20
+latency-wait: 60
+local-cores: 0 # Prevents fallback to local execution upon job failure
