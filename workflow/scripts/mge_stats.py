@@ -113,19 +113,20 @@ def parse_out_file(out_file_path):
     process_id_data = {
         'n_reads_in': None,
         'ref_length': None,
-        'successful_aligned': None  # New field for calculating n_reads_skipped
+        'successful_aligned': None
     }
 
-    # Use regex for more reliable parsing
-    reads_in_match = re.search(r'Number of input sequences considered:\s*(\d+)', content)
+    # Extract number of input sequences (updated pattern)
+    reads_in_match = re.search(r'Number of input sequences:\s*(\d+)', content)
     if reads_in_match:
         process_id_data['n_reads_in'] = int(reads_in_match.group(1))
     
-    # Parse successful aligned sequences for calculating n_reads_skipped
-    aligned_match = re.search(r'Number of input sequences successful aligned with exonerate \(all\)\s*\n\s*to the amino acid sequence found in vulgar file:\s*(\d+)', content)
+    # Simplified pattern - just target the line with the number
+    aligned_match = re.search(r'to the amino acid sequence, see vulgar file:\s*(\d+)', content)
     if aligned_match:
         process_id_data['successful_aligned'] = int(aligned_match.group(1))
     
+    # Reference length pattern
     ref_length_match = re.search(r'Length of alignment:\s*(\d+)', content)
     if ref_length_match:
         process_id_data['ref_length'] = int(ref_length_match.group(1))
