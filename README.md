@@ -11,7 +11,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Contributing](#Contributing)
 
 # Requirements #
-- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) installed. Version 1.9.5 release can be downloaded from [here](https://github.com/cmayer/MitoGeneExtractor/releases/tag/v1.9.5).
+- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) Version 1.9.6beta3 installed. 
 - Paired-end reads in .fastq.gz or .fastq format.
 - samples_file.csv (Either manuualy or as [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)).
 - sequence_references_file.csv (Either manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
@@ -66,92 +66,22 @@ git status
 - The tool can fetch both protein and nucleotide sequences from NCBI databases for a given gene. See [gene_fetch](https://github.com/SchistoDan/gene_fetch/tree/main) repository for more information.
 
 ## Customising snakemake configuration file ##
-- Update config.yaml with neccessary paths and variables.
+- Update config.yaml with neccessary paths and variables (see `config/config.yaml`.
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate run paramters.
   - See [fasta_cleaner.py repository](https://github.com/bge-barcoding/fasta-cleaner) for information on filtering variables and thresholds (default below suitable in most cases).
   - See [Gene Fetch repository](https://github.com/bge-barcoding/gene_fetch) for guidance on creating [sequence_reference_file.csv](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file#normal-mode).
-```
-### config.yaml
-# MGE run name identifier
-run_name: "run_1"
 
-# Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "/path/to/MitoGeneExtractor-vX.X.X"
-
-# Path to samples.csv
-samples_file: "/path/to/samples.csv"
-
-# Path to references.csv
-sequence_reference_file: "/path/to/sequence_references.csv"
-
-# Path to output directory. Will make final dir if it does not exist already
-output_dir: "/path/to/desired/output/directory"
-
-## MGE running parameters
-# Exonerate relative score threshold parameter
-r:
-  - 1
-  - 1.3
-  - 1.5
-
-# Exonerate minimum score threshold parameter
-s:
-  - 50
-  - 100
-  
-# Post-processing of aligned reads for cleaning (using fasta_cleaner.py)
-run_fasta_cleaner: true  # Set false to skip fasta_cleaner step
-
-fasta_cleaner:
-  consensus_threshold: 0.5
-  human_threshold: 0.95
-  at_difference: 0.1
-  at_mode: "absolute"
-  outlier_percentile: 90.0
-  disable_human: false
-  disable_at: false
-  disable_outliers: false
-  reference_dir: null 
-
-# Comparison of consensus sequences produced via MGE and fasta_cleaner
-# Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
-run_fasta_compare: true  # Set false to skip fasta_compare step
-
-fasta_compare:
-  target: "cox1"
-  verbose: false
-```
 
 # Cluster configuration #
-- [snakemake.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake/snakemake.sh) cluster submission script:
-  - `--cluster`: Defines how jobs are submitted to SLURM.
-    - `--parsable`: Tells sbatch to only return the job ID.
-    - `--signal=USR2@90`: Sends a signal 90 seconds before job time limit (for clean termination).
-    - `--cluster-config`: Lists path to cluster configuration file (see below for explanation) and enables use of rule-specific resource requirements.
-    - `--mem={resources.mem_mb}MB`: Dynamically sets memory allocation by using the mem parameter from each snakemake rule.
-    - `--cpus-per-task={threads}`: Uses the threads parameter from each snakemake rule.
-    - `--output=slurm-%j-%x.out` & `--error=slurm-%j-%x.err`: Sets naming convention for .out and .err files of individual jobs. '%j' = Job ID. '%x' = Job name.
-  - `--snakefile`: Path to Snakefile.
-  - `--configfile`: Path to snakemake workflow configuration file.
-  - `--latency-wait`: Required when working on a distributed filesystem (e.g. NFS/GPFS). Set at 60 seconds by default. May be necessary to increase if experiencing latency/'missing' file issues.
-  - `--rerun-incomplete`: If the snakemake workflow fails or is stopped for any reason, adding this option to the run command will enable the workflow to carry on from where it stopped.
+- [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake/snakemake.sh) SLURM cluster submission script.
+- profiles/slurm/[config.yaml](https://github.com/bge-barcoding/BGEE/blob/slurm-profile/profiles/slurm/config.yaml) sets SLURM cluster run parameters.
 
-- [cluster_config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/cluster_config.yaml)
-  - Enables job-specific resource allocation based on job requirements and system capability. 
-  - Default: Sets the default/minimum parameters to fallback on if not listed for a specific rule
-
-- The aforementioned files will need tweaking to run on your cluster set up.
 
 ## Resource allocation ##
 - SBATCH scheduler job parameters:
-  - `#SBATCH --cpus-per-task` and `#SBATCH --mem` only apply to the 'master' job that coordinates the workflow, and submits individual jobs to the job scheduler. The specified resources are only allocated for this 'master' job. Therefore, only 5-15G of memory and 2-4 CPUs are likely needed. It is recommended to set a relatively 'long' partition (e.g. several days-week) for this job, as it will be active for the entire workflow run.
-- Rule-specific resources in [Cluster config](https://github.com/SchistoDan/BGEE/blob/main/config/cluster_config.yaml):
-  - The `cpus-per-task` and `mem` values are listed for each rule in the cluster_config.yaml file. Each rule can specify the necessary number of threads (i.e. cpus-per-task) and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every fastp_pe_merge job). If a rule doesn't specify resources in the cluster_config.yaml, it will fallback to the listed 'defaults.
-- 'Global' limits:
-  - '--cores': Limits total cores used across all concurrent jobs in the workflow.
-  - '--jobs': Maximum number of simultaneous cluster jobs that will be run. E.g., '--jobs 25' = Up to 25 separate SLURM jobs can run simultaneously. 100 parallel is the maximum allowed.
+- Rule-specific resources in config/[config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml):
+  - The `threads` and `mem_mb` values are listed for each rule, where you can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every fastp_pe_merge job). If a rule doesn't specify resources in the config.yaml, it will fallback to the listed 'defaults' in profiles/slurm/config.yaml.
 
-- **A workflow running 570 samples (genome skims) in 'concat' preprocessing mode and using default MGE parameters (r:1, s:100) ran end-to-end in approximately 11.5 hours (using listed resources allocated in cluster_config.yaml)**
   
 # Results structure #
 ```
@@ -237,7 +167,6 @@ output_dir/
 
 # Integrated and supplementary scripts #
 See scripts/
-- [**1_gene_fetch.py**](https://github.com/bge-barcoding/gene_fetch) = Supplementary script that fetches protein references for each sample using taxids from samples.csv to query NCBI DBs (via BioEntrez API). Fetches closest reference available to input taxid. See [1_gene_fetch.py](https://github.com/bge-barcoding/gene_fetch) github repository for more information.
 - [**rename_headers.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/rename_headers.py) = Script to rename headers of consensus sequence FASTA files and filenames.
 - [**fasta_cleaner_mge.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner_mge.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
 - [**mge_stats.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/mge_stats.py) = This script (incorporated into 'rule extract_stats_to_csv') uses alignment fasta files and MGE.out files to generate summary statistics for each sample.
@@ -253,9 +182,8 @@ See scripts/
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
 
 
-
   ## To do ##
 - Split Snakefile into .smk files
-- Integrate gene_fetch.py into snakefile.
+- Integrate gene_fetch.py into workflow.
 - Generate RO-crates.
   
