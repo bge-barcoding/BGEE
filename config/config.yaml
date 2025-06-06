@@ -1,17 +1,17 @@
 # MGE run name identifier
-run_name: "RUN_1"
+run_name: "run1"
 
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "path/to/MitoGeneExtractor-v1.9.5"
+mge_path: "./BGEE/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 
 # Path to samples.csv
-samples_file: "path/to/samples.csv"
+samples_file: "./samples_files.csv"
 
 # Path to references.csv
-sequence_reference_file: "path/to/sequence_references.csv"
+sequence_reference_file: "./sequence_references.csv"
 
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "path/to/output/directory"
+output_dir: "./BGEE_outputs/run1"
 
 ## MGE running parameters
 # Exonerate relative score threshold parameter
@@ -47,3 +47,93 @@ run_fasta_compare: true  # Set false to skip fasta_compare step
 fasta_compare:
   target: "cox1"
   verbose: false
+
+# Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
+rules:
+  fastp_pe_merge:
+    mem_mb: 8192
+    threads: 4
+   
+  clean_headers_merge:
+    mem_mb: 4096
+    threads: 2
+    
+  aggregate_clean_headers_logs_merge:
+    mem_mb: 2048
+    threads: 2
+    
+  fastp_pe_concat:
+    mem_mb: 8192
+    threads: 4
+    
+  fastq_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  gzip_trimmed:
+    mem_mb: 4096
+    threads: 4
+    
+  aggregate_concat_logs:
+    mem_mb: 2048
+    threads: 2
+    
+  quality_trim:
+    mem_mb: 8192
+    threads: 4
+    
+  aggregate_trim_galore_logs:
+    mem_mb: 2048
+    threads: 2
+    
+  MitoGeneExtractor_merge:
+    mem_mb: 15360
+    threads: 4
+    
+  MitoGeneExtractor_concat:
+    mem_mb: 15360
+    threads: 4
+    
+  rename_and_combine_cons_merge:
+    mem_mb: 2048
+    threads: 4
+    
+  rename_and_combine_cons_concat:
+    mem_mb: 2048
+    threads: 4
+    
+  create_alignment_log_merge:
+    mem_mb: 4096
+    threads: 2
+    
+  create_alignment_log_concat:
+    mem_mb: 4096
+    threads: 2
+    
+  fasta_cleaner_merge:
+    mem_mb: 8192
+    threads: 4
+    
+  fasta_cleaner_concat:
+    mem_mb: 8192
+    threads: 4
+    
+  extract_stats_to_csv_merge:
+    mem_mb: 4096
+    threads: 4
+    
+  extract_stats_to_csv_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  combine_stats_files:
+    mem_mb: 1024
+    threads: 1
+    
+  fasta_compare:
+    mem_mb: 4096
+    threads: 4
+    
+  cleanup_files:
+    mem_mb: 1024
+    threads: 1
