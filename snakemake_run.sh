@@ -1,39 +1,51 @@
 #!/bin/bash
-##These SBATCH parameters (parition, mem, and cpus-per-task) are solely for the main snakemake process.
-##These may need some tweaking, although 2-15G of memory and 1-4 CPUs is likely more than enough.
-#SBATCH --job-name=mge
-#SBATCH --partition=long
-#SBATCH --mem=8G
-#SBATCH --cpus-per-task=4
-
-
 
 ## Conda environment
+source PATH/TO/conda.sh
 
-# Set path to conda explicitly
-export PATH="/path/to/conda/bin:$PATH"
+conda activate bgee_env
 
-# Source conda.sh
-source /path/to/conda/etc/profile.d/conda.sh
 
-# Activate conda env
-conda activate mge_env
+
+# Setup logging
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RUN_ID="RUN_1"          			# CHANGE RUN ID FOR EACH NEW RUN
+LOG_FILE="snakemake_${TIMESTAMP}.log"
+
+# Function for timestamped logging
+log_with_timestamp() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+}
+
+# Start logging
+log_with_timestamp "=== Snakemake Workflow Start ==="
+log_with_timestamp "Run ID: $RUN_ID"
+log_with_timestamp "Log file: $LOG_FILE"
+log_with_timestamp "Screen session: $STY"
+
+# Show system info
+log_with_timestamp "Running on: $(hostname)"
+log_with_timestamp "Working directory: $(pwd)"
+log_with_timestamp "Conda environment: $CONDA_DEFAULT_ENV"
 
 
 
 
 ##Snakemake
-
 # Unlock directory
-snakemake --snakefile ./workflow/Snakefile --configfile ./config/config.yaml --unlock
+log_with_timestamp "Unlocking Snakemake directory..."
 
-# Run snakemake workflow on cluster
-snakemake \
-          --cluster "sbatch --parsable --partition=day --signal=USR2@90 --mem={resources.mem_mb}MB --cpus-per-task={threads} --output=slurm-%j-%x.out --error=slurm-%j-%x.err" \
-          --cluster-config ./config/cluster_config.yaml \
-          --cores 28 \
-          --jobs 15 \
-          --snakefile ./workflow/Snakefile \
-          --configfile ./config/config.yaml \
-          --rerun-incomplete \
-          --latency-wait 60
+snakemake --profile ./profiles/slurm/ --snakefile ./workflow/Snakefile-196beta3-3 --configfile ./config/config3.yaml --unlock
+
+
+# Run snakemake workflow with profile
+log_with_timestamp "Starting workflow execution..."
+
+snakemake --profile ./profiles/slurm/ \
+    --snakefile ./workflow/Snakefile \
+    --configfile ./config/config.yaml \
+    --rerun-incomplete \
+    --cores all \
+    2>&1 | tee -a "$LOG_FILE"
+
+log_with_timestamp "Log file saved as: $LOG_FILE"
