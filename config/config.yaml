@@ -25,14 +25,13 @@ s:
   - 50
   - 100
   
-# Post-processing of aligned reads for cleaning (see scripts/)
-# Default parameters
+# 'Cleaning' of recovered barcode sequences
 fasta_cleaner:
-  consensus_threshold: 0.5
-  human_threshold: 0.95
-  at_difference: 0.1
-  at_mode: "absolute"      # absolute (remove seqs if AT content differs from consensus by more than threshold in either direction), higher (remove only sequences with AT content above consensus + threshold), lower (remove only sequences with AT content below consensus - threshold)
-  outlier_percentile: 90.0
+  consensus_threshold: 0.5  # 
+  human_threshold: 0.95     # Threshold for human COI similarity (e.g. >95% similarity = read removed).
+  at_difference: 0.1        # 
+  at_mode: "absolute"       # absolute (remove seqs if AT content differs from consensus by more than threshold in either direction), higher (remove only sequences with AT content above consensus + threshold), lower (remove only sequences with AT content below consensus - threshold)
+  outlier_percentile: 90.0  # 
   disable_human: false      # If false, 'human_cox1_filter.py' will run
   disable_at: false         # If false, 'at_content_filter.py' will run
   disable_outliers: false   # If false, 'statistical_outliers.py' will run
