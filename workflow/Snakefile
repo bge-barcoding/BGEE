@@ -87,37 +87,16 @@ validate_cluster_config(cluster_config)
 # ===== RESOURCE MANAGEMENT FUNCTIONS =====
 
 def get_mem_mb_from_config(rule_name, default=12288):
-    """
-    Get memory allocation from cluster config in MB for scaling with attempts.
-    """
-    # Check if rule exists in cluster config
+    """Get memory allocation from cluster config in MB."""
     if rule_name in cluster_config:
-        mem_str = cluster_config[rule_name].get("mem", str(default))
-    # Otherwise use default section
+        return cluster_config[rule_name].get("mem_mb", default)
     elif "__default__" in cluster_config:
-        mem_str = cluster_config["__default__"].get("mem", str(default))
+        return cluster_config["__default__"].get("mem_mb", default)
     else:
-        mem_str = str(default)
-    
-    # Convert from string (e.g. "4G") to MB
-    if isinstance(mem_str, str):
-        if mem_str.endswith("G"):
-            return int(float(mem_str.rstrip("G")) * 1024)
-        elif mem_str.endswith("M"):
-            return int(float(mem_str.rstrip("M")))
-        else:
-            try:
-                return int(float(mem_str))
-            except ValueError:
-                return default
-    else:
-        return int(mem_str)
+        return default
 
 def get_cluster_threads(rule_name, default=2):
-    """
-	Get CPU count from cluster config for each rule.
-	If rule not listed in cluster config then use default allocation.
-	"""
+    """Get CPU count from cluster config for each rule."""
     # Check if rule exists in cluster config
     if rule_name in cluster_config:
         return cluster_config[rule_name].get("cpus-per-task", default)
@@ -333,7 +312,7 @@ rule fastp_pe_merge:
         err=os.path.join(output_dir_merge, "trimmed_data/{sample}_fastp.err")
     threads: lambda wildcards: get_cluster_threads("fastp_pe_merge")
     resources:
-        mem=lambda wildcards: get_mem_mb_from_config("fastp_pe_merge")
+        mem_mb=lambda wildcards: get_mem_mb_from_config("fastp_pe_merge")
     retries: 3
     shell:
         """
