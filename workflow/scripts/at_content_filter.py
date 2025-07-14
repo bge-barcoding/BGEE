@@ -2,12 +2,12 @@
 """
 AT Content FASTA Sequence Filter
 
-A specialized tool for filtering FASTA sequence alignments based on AT content analysis.
+A specialised tool for filtering FASTA sequence alignments based on AT content analysis.
 Extracts sequences that have AT content within specified thresholds compared to consensus.
 
 Features:
 ---------
-- AT content calculation using vectorized operations
+- AT content calculation using vectorised operations
 - Consensus sequence generation with configurable threshold
 - Three filtering modes: absolute, higher, lower
 - Parallel processing for multiple files with memory-aware batching
@@ -38,7 +38,7 @@ output_dir/
 │   ├── sample2_log.txt
 │   ├── at_filter_main.log         # Main processing log
 │   └── ...
-├── at_filtered_paths.log          # Paths to all filtered files (one per line) [customizable name]
+├── at_filtered_paths.log          # Paths to all filtered files (one per line) [customisable name]
 └── at_filter_summary.csv          # Summary statistics
 
 Key Output Files:
@@ -47,7 +47,7 @@ Key Output Files:
   one per line. Use this file as input to downstream tools.
 - at_filter_summary.csv: Sample-level summary statistics
 
-Note: The filtered files list name can be customized using --filtered-files-list argument.
+Note: The filtered files list name can be customised using --filtered-files-list argument.
 
 Authors: B. Price & D. Parsons @ NHMUK (AT Content Filter Version)
 Version: 1.2.0
@@ -83,7 +83,7 @@ import shutil
 # =============================================================================
 # Core Constants and Configuration
 # =============================================================================
-# File size threshold for chunking optimization (100 MB)
+# File size threshold for chunking optimisation (100 MB)
 CHUNK_THRESHOLD = 100 * 1024 * 1024  # 100 MB in bytes
 
 # File size threshold for memory-aware processing (350 MB)
