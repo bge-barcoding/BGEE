@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 Reference Filter
-Removes sequences that are outliers compared to reference sequences
+Removes sequences that are outliers compared to reference sequences.
+
+1. Finds corresponding reference sequences for each alignment file
+2. Compares each sequence to the reference (not to a consensus generated from the alignment)
+3. Calculates deviation scores for each sequence compared to the reference
+4. Uses statistical thresholds to identify sequences that are outliers relative to the reference
+5. Removes outlier sequences that deviate too much from the reference pattern
+6. Outputs cleaned alignments with sequences that are similar to the reference
 """
 
 import os
