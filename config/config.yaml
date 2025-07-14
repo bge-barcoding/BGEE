@@ -2,16 +2,16 @@
 run_name: "RUN_1"
 
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "path/to/MitoGeneExtractor-v1.9.5"
+mge_path: "/path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 
 # Path to samples.csv
-samples_file: "path/to/samples.csv"
+samples_file: "/path/to/input/samples/file/samples.csv"
 
 # Path to references.csv
-sequence_reference_file: "path/to/sequence_references.csv"
+sequence_reference_file: "/path/to/input/reference/sequence/csv/sequence_references.csv"
 
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "path/to/output/directory"
+output_dir: "/path/to/output/directory"
 
 ## MGE running parameters
 # Exonerate relative score threshold parameter
@@ -25,9 +25,7 @@ s:
   - 50
   - 100
   
-# Post-processing of aligned reads for cleaning (using fasta_cleaner.py)
-run_fasta_cleaner: true  # Set false to skip fasta_cleaner step
-
+# Post-processing of aligned reads for cleaning (see scripts/)
 # Default parameters
 fasta_cleaner:
   consensus_threshold: 0.5
@@ -35,15 +33,157 @@ fasta_cleaner:
   at_difference: 0.1
   at_mode: "absolute"
   outlier_percentile: 90.0
-  disable_human: false
-  disable_at: false
-  disable_outliers: false
-  reference_dir: null 
+  disable_human: false      # If false, 'human_cox1_filter.py' will run
+  disable_at: false         # If false, 'at_content_filter.py' will run
+  disable_outliers: false   # If false, 'statistical_outliers.py' will run
+  reference_dir: null       # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to references
 
-# Comparison of consensus sequences produced via MGE and fasta_cleaner
+
+# Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
 # Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
 run_fasta_compare: true  # Set false to skip fasta_compare step
 
 fasta_compare:
   target: "cox1"
   verbose: false
+
+# Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
+# Rules have dynamic memory scaling upon retry (mem_mb * retry #).
+rules:
+  fastp_pe_merge:
+    mem_mb: 8192
+    threads: 4
+   
+  clean_headers_merge:
+    mem_mb: 4096
+    threads: 2
+    
+  aggregate_clean_headers_logs_merge:
+    mem_mb: 2048
+    threads: 2
+    
+  fastp_pe_concat:
+    mem_mb: 8192
+    threads: 4
+    
+  fastq_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  gzip_trimmed:
+    mem_mb: 4096
+    threads: 4
+    
+  aggregate_concat_logs:
+    mem_mb: 2048
+    threads: 2
+    
+  quality_trim:
+    mem_mb: 8192
+    threads: 4
+    
+  aggregate_trim_galore_logs:
+    mem_mb: 2048
+    threads: 2
+    
+  MitoGeneExtractor_merge:
+    mem_mb: 20480
+    threads: 6
+    partition: medium
+    
+  MitoGeneExtractor_concat:
+    mem_mb: 20480
+    threads: 6
+    partition: medium
+    
+  rename_and_combine_cons_merge:
+    mem_mb: 2048
+    threads: 4
+    
+  rename_and_combine_cons_concat:
+    mem_mb: 2048
+    threads: 4
+    
+  create_alignment_log_merge:
+    mem_mb: 4096
+    threads: 2
+    
+  create_alignment_log_concat:
+    mem_mb: 4096
+    threads: 2
+    
+  human_cox1_filter_merge:
+    mem_mb: 10240
+    threads: 8
+    
+  at_content_filter_merge:
+    mem_mb: 15360
+    threads: 8
+    
+  statistical_outlier_filter_merge:
+    mem_mb: 8192
+    threads: 8
+    
+  reference_filter_merge:
+    mem_mb: 4096
+    threads: 4
+    
+  consensus_generation_merge:
+    mem_mb: 4096
+    threads: 4
+    
+  aggregate_filter_metrics_merge:
+    mem_mb: 2048
+    threads: 1
+
+  human_cox1_filter_concat:
+    mem_mb: 10240
+    threads: 8
+  
+  at_content_filter_concat:
+    mem_mb: 15360
+    threads: 8
+    
+  statistical_outlier_filter_concat:
+    mem_mb: 4096
+    threads: 1
+    
+  reference_filter_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  consensus_generation_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  aggregate_filter_metrics_concat:
+    mem_mb: 2048
+    threads: 1
+    
+  extract_stats_to_csv_merge:
+    mem_mb: 4096
+    threads: 4
+    
+  extract_stats_to_csv_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  combine_stats_files:
+    mem_mb: 1024
+    threads: 1
+    
+  fasta_compare:
+    mem_mb: 4096
+    threads: 4
+    
+  remove_fasta_cleaner_files:
+    mem_mb: 4096
+    threads: 4
+    
+  remove_exonerate_intermediates:
+    mem_mb: 4096
+    threads: 2
+    
+  cleanup_files:
+    mem_mb: 1024
+    threads: 1
