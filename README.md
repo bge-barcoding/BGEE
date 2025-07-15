@@ -46,8 +46,6 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 10. Remove temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
-<img width="849" height="1839" alt="image" src="https://github.com/user-attachments/assets/e290338e-e3c3-4548-9daf-378711f55060" />
-
 
 # Running: #
 ## Clone BGEE github repository and set up conda environment ##
