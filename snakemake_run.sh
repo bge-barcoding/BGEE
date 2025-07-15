@@ -35,7 +35,7 @@ log_with_timestamp "Conda environment: $CONDA_DEFAULT_ENV"
 # Unlock directory
 log_with_timestamp "Unlocking Snakemake directory..."
 
-snakemake --profile ./profiles/slurm/ --snakefile ./workflow/Snakefile-196beta3-3 --configfile ./config/config3.yaml --unlock
+snakemake --profile ./profiles/slurm/ --snakefile ./workflow/Snakefile --configfile ./config/config.yaml --unlock
 
 
 # Run snakemake workflow with profile
