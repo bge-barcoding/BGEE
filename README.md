@@ -283,7 +283,7 @@ rules:
 
 # Cluster configuration using profiles/slurm/config.yaml #
 - See `profiles/slurm/config.yaml` below for SLURM cluster submission parameters. You will need to change `slurm_parition` to a suitable parition on your cluster.
-"""
+```
 # profiles/slurm/config.yaml
 executor: slurm
 
@@ -298,7 +298,7 @@ jobs: 10                          # Maximum number of concurrent jobs run on clu
 latency-wait: 60                  # Wait 60 seconds before checking job status
 local-cores: 0                    # Prevents fallback to local execution upon job failure
 max-jobs-per-second: 1            # Controls rate Snakemake submits jobs to SLURM. Prevents overwhelming scheduler  
-"""
+```
 
 # Cluster submission #
 - [snakemake_run.sh](https://github.com/SchistoDan/BGEE/blob/main/snakemake_run.sh) handles submission of the snakemake command to the cluster.
