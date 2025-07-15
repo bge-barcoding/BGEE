@@ -1,13 +1,13 @@
-<img width="849" height="1839" alt="image" src="https://github.com/user-attachments/assets/e290338e-e3c3-4548-9daf-378711f55060" /># Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow #
+# Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow #
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens.
 
 # Contents # 
- - [Requirements](#requirements)
- - [Workflow](#workflow)
+ - [Requirements](#Requirements)
+ - [Workflow](#Workflow)
  - [Running](#running)
- - [Cluster configuration](#cluster-configuration)
+ - [Cluster configuration](#Cluster-configuration-using-profiles/slurm/config.yaml)
  - [Cluster submission](#Cluster-submission)
- - [Results structure](#results-structure)
+ - [Results structure](#Results-structure)
  - [Integrated and supplementary scripts](#Integrated-and-supplementary-scripts)
  - [Contributing](#Contributing)
 
@@ -44,6 +44,10 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria: Rank1 = No ambiguous bases & longest stretch ≥ 650, Rank3 = No ambiguous bases & longest stretch ≥ 500, Rank3 = No ambiguous bases & 300 ≤ longest stretch ≤ 499, Rank4 = No ambiguous bases &1 ≤ longest stretch ≤ 299, Rank5 = Has ambiguous bases. (uses supplementary [fasta_compare](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/fasta_compare.py).
 9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
 10. Remove temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
+
+
+<img width="849" height="1839" alt="image" src="https://github.com/user-attachments/assets/e290338e-e3c3-4548-9daf-378711f55060" />
+
 
 # Running: #
 ## Clone BGEE github repository and set up conda environment ##
@@ -84,9 +88,9 @@ git status
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate ('r' and 's') run paramters.
   - See [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) for information on filtering variables and thresholds (default is likely suitable in most cases).
   - See [Gene Fetch repository](https://github.com/bge-barcoding/gene_fetch) for guidance on creating [sequence_reference_file.csv](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file#normal-mode).
-
+- Rule-specific resources in the [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) - Each rule can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
 ```
-### config.yaml
+# config/config.yaml
 # MGE run name identifier
 run_name: "RUN_1"
 
@@ -302,72 +306,57 @@ max-jobs-per-second: 1            # Controls rate Snakemake submits jobs to SLUR
 - Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/ directory') - This will submit `snakemake_run.sh` to the head/login node of your cluster, and will orchestrator SLURM job submissions for all snakemake workflow steps.
 
   
-## Resource allocation ##
-- SBATCH scheduler job parameters:
-  - `#SBATCH --cpus-per-task` and `#SBATCH --mem` only apply to the 'master' job that coordinates the workflow, and submits individual jobs to the job scheduler. The specified resources are only allocated for this 'master' job. Therefore, only 5-15G of memory and 2-4 CPUs are likely needed. It is recommended to set a relatively 'long' partition (e.g. several days-week) for this job, as it will be active for the entire workflow run.
-- Rule-specific resources in [Cluster config](https://github.com/SchistoDan/BGEE/blob/main/config/cluster_config.yaml):
-  - The `cpus-per-task` and `mem` values are listed for each rule in the cluster_config.yaml file. Each rule can specify the necessary number of threads (i.e. cpus-per-task) and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every fastp_pe_merge job). If a rule doesn't specify resources in the cluster_config.yaml, it will fallback to the listed 'defaults.
-- 'Global' limits:
-  - '--cores': Limits total cores used across all concurrent jobs in the workflow.
-  - '--jobs': Maximum number of simultaneous cluster jobs that will be run. E.g., '--jobs 25' = Up to 25 separate SLURM jobs can run simultaneously. 100 parallel is the maximum allowed.
 
-- **A workflow running 570 samples (genome skims) in 'concat' preprocessing mode and using default MGE parameters (r:1, s:100) ran end-to-end in approximately 11.5 hours (using listed resources allocated in cluster_config.yaml)**
-  
+
+
 # Results structure #
 ```
 output_dir/
 ├── merge_mode/
 │   ├── consensus/
-│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas      # Individual consensus files for each sample/parameter combination
-│   │   └── {run_name}_merge.fasta                             # Combined consensus sequences for merge mode
-│   ├── alignment/
-│   │   └── {sample}_r_{r}_s_{s}_align_{reference_name}.fas    # Alignment files
-│   ├── trimmed_data/
-│   │   ├── {sample}_R1_trimmed.fq.gz                          # Trimmed forward reads
-│   │   ├── {sample}_R2_trimmed.fq.gz                          # Trimmed reverse reads
-│   │   ├── {sample}_merged_clean.fq                           # Cleaned and merged reads
-│   │   ├── reports/
-│   │   │   └── {sample}_fastp_report.html                     # Quality reports
-│   │   └── unpaired/
-│   │       ├── {sample}_unpaired_R1.fq                        # Unpaired reads
-│   │       └── {sample}_unpaired_R2.fq
-│   ├── fasta_cleaner/
-│   │   ├── combined_statistics.csv                            # Statistics from cleaning
-│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences
+│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas      # Individual consensus files for each sample/parameter combination. 
+│   │   └── {run_name}_merge.fasta                             # Combined consensus sequences multi-FASTA for merge mode. sequences will have the fasta header '{sample}_r_{r}_s_{s}_con_{reference_name}_merge' after renaming.
+│   ├── alignment/                                             # Alignment files containing trimmed reads aligned by MGE/exonerate (i.e reads that went into generating the consensus sequence).
+│   ├── trimmed_data/                                          # Intermediate. Removed at end of run.
+│   ├── fasta_cleaner/                                         # Consensus 'cleaning' intermediates and outputs. Each 01-05 directory contains metrics related to each cleaning step.
+│   │   ├── 01_human_filtered/
+│   │   ├── 02_at_filtered/
+│   │   ├── 03_outlier_filtered/
+│   │   ├── [optional] 04_reference_filtered/
+│   │   ├── 05_cleaned_consensus/
+│   │   ├── combined_statistics.csv                            # Combined statistics from all cleaning steps.
+│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences multi-FASTA.
 │   ├── logs/
-│   │   ├── alignment_files.log
-│   │   ├── clean_headers.log
-│   │   ├── clean_headers/
-│   │   │   └── {sample}.log
+│   │   ├── clean_headers.log                                  # Aggregated logs for fasta header cleaning for all samples.
 │   │   ├── cleaning_complete.txt
-│   │   ├── fasta_cleaner.log
+│   │   ├── file_cleanup_complete.txt
+│   │   ├── rename_fasta.log
+│   │   ├── fasta_cleaner/                                     # Contains logs for each consensus sequence cleaning step.
+│   │   ├── fastp/                                             # Contains fastp trimming logs for each sample.
 │   │   ├── mge/
-│   │   │   └── {sample}_vulgar_r_{r}_s_{s}_{reference_name}.txt
-│   │   └── rename_complete.txt
-│   ├── out/
-│   │   └── {sample}_r_{r}_s_{s}_summary_{reference_name}.out  # MGE output files
-│   ├── err/
-│   │   └── {sample}_r_{r}_s_{s}_summary_{reference_name}.err  # Error logs
-│   ├── {run_name}_merge.csv                                   # Summary statistics file
+│   │   │   └── {sample}_r_{r}_s_{s}_{reference_name}/         # MGE vulgar files for each sample
+│   │   │   └── alignment_files.log
+│   │   │   └── mge_stats.log
+│   ├── out/                                                   # MGE output files for each sample.
+│   ├── err/                                                   # MGE error/processing logs for each sample.
+│   ├── {run_name}_merge-stats.csv                             # Summary statistics file for merge mode. 
 │   └── cleanup_complete.txt
 │
 ├── concat_mode/
 │   ├── consensus/
-│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas      # Individual consensus files for each sample/parameter combo
-│   │   └── {run_name}_concat.fasta                            # Combined consensus sequences for concat mode
-│   ├── alignment/
-│   │   └── {sample}_r_{r}_s_{s}_align_{reference_name}.fas    # Alignment files
+│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas       # Individual consensus files for each sample/parameter combination.
+│   │   └── {run_name}_concat.fasta                            # Combined consensus sequences multi-FASTA for merge mode. sequences will have the fasta header '{sample}_r_{r}_s_{s}_con_{reference_name}' after renaming.
+│   ├── alignment/                                             # Alignment files containing trimmed reads aligned by MGE/exonerate (i.e reads that went into generating the consensus sequence).
 │   ├── trimmed_data/
-│   │   ├── {sample}_R1_trimmed.fastq                          # Trimmed forward reads
-│   │   ├── {sample}_R2_trimmed.fastq                          # Trimmed reverse reads
-│   │   ├── {sample}_concat.fastq                              # Concatenated reads
-│   │   ├── {sample}_concat_trimmed.fq                         # Trimmed concatenated reads
-│   │   └── reports/
-│   │       ├── {sample}_fastp_report.html                     # Quality reports
-│   │       └── {sample}_concat.fastq_trimming_report.txt      # Trim Galore reports
-│   ├── fasta_cleaner/
-│   │   ├── combined_statistics.csv                            # Statistics from cleaning
-│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences
+│   │   ├── {sample}/                                          # Trimmed fwd and rev reads (fq.gz), fastp JSON and HTML reports, and Trim Galore QC report.
+│   ├── fasta_cleaner/                                         # Consensus 'cleaning' intermediates and outputs. Each 01-05 directory contains metrics related to each cleaning step.
+│   │   ├── 01_human_filtered/
+│   │   ├── 02_at_filtered/
+│   │   ├── 03_outlier_filtered/
+│   │   ├── [optional] 04_reference_filtered/
+│   │   ├── 05_cleaned_consensus/
+│   │   ├── combined_statistics.csv                            # Combined statistics from all cleaning steps.
+│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences multi-FASTA.
 │   ├── logs/
 │   │   ├── alignment_files.log
 │   │   ├── concat/
@@ -380,18 +369,30 @@ output_dir/
 │   │   ├── rename_complete.txt
 │   │   ├── trim_galore/
 │   │   │   └── {sample}.log
+
+│   ├── logs/
+│   │   ├── concat_reads.log                                   # Aggregated logs for trimmed PE read concatentation.
+│   │   ├── cleaning_complete.txt
+│   │   ├── file_cleanup_complete.txt
+│   │   ├── rename_fasta.log
+│   │   ├── fasta_cleaner/                                     # Contains logs for each consensus sequence cleaning step.
+│   │   ├── fastp/                                             # Contains fastp trimming logs for each sample.
+│   │   ├── gzip/                                              # Logs for each trimmed read compression.
+│   │   ├── mge/
+│   │   │   └── {sample}_r_{r}_s_{s}_{reference_name}/         # MGE vulgar files for each sample
+│   │   │   └── alignment_files.log
+│   │   │   └── mge_stats.log
 │   │   └── trim_galore.log
-│   ├── out/
-│   │   └── {sample}_r_{r}_s_{s}_summary_{reference_name}.out  # MGE output files
-│   ├── err/
-│   │   └── {sample}_r_{r}_s_{s}_summary_{reference_name}.err  # Error logs
-│   ├── {run_name}_concat.csv                                  # Summary statistics file
+│   ├── out/                                                   # MGE output files for each sample.
+│   ├── err/                                                   # MGE error/processing logs for each sample.
+│   ├── {run_name}_concat-stats.csv                             # Summary statistics file for concat mode. 
 │   └── cleanup_complete.txt
 │
 ├── fasta_compare/
 │   ├── {run_name}_fasta_compare.csv                          # Comparison results between modes
 │   ├── {run_name}_full_sequences.fasta                       # Full consensus sequences from both modes
-│   └── {run_name}_barcode_sequences.fasta                    # Barcode sequences from both modes
+│   ├── {run_name}_barcode_sequences.fasta                    # Barcode sequences from both modes
+│   └── fasta_compare_{run_name}.log
 └── {run_name}_combined_stats.csv                             # Combined statistics from both modes
 ```
 
@@ -418,4 +419,7 @@ See scripts/
 - Split Snakefile into .smk files
 - Integrate gene_fetch.py into snakefile.
 - Generate RO-crates.
+
+
+
   
