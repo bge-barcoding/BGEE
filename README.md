@@ -8,7 +8,6 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Cluster configuration](#Cluster-configuration-using-profiles/slurm/config.yaml)
  - [Cluster submission](#Cluster-submission)
  - [Results structure](#Results-structure)
- - [Integrated and supplementary scripts](#Integrated-and-supplementary-scripts)
  - [Contributing](#Contributing)
 
 # Requirements #
@@ -393,14 +392,6 @@ output_dir/
 └── {run_name}_combined_stats.csv                             # Combined statistics from both modes
 ```
 
-# Integrated and supplementary scripts #
-See `scripts/` 
-- [**rename_headers.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/rename_headers.py) = Script to rename headers of consensus sequence FASTA files and filenames.
-- [**fasta_cleaner_mge.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_cleaner_mge.py) = This script (incorproated into 'fasta_cleaner' rule) 'cleans' MGE alignment files using AT% thresholds, base consensus similarity, human COI similarity, and (if supplied) reference sequence similarity. Outputs 'cleaned' consensus sequences for each sample. Modified from [fasta_cleaner.py](https://github.com/bge-barcoding/fasta-cleaner), see original github repository for more information.
-- [**mge_stats.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/mge_stats.py) = This script (incorporated into 'rule extract_stats_to_csv') uses alignment fasta files and MGE.out files to generate summary statistics for each sample.
-- [**csv_combiner_mge.py**](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/csv_combiner_mge.py) = This script combines both summary stats files from 'concat' and 'merge' runs of the workflow.
-- [**fasta_compare.py**](https://github.com/SchistoDan/MitoGeneExtractor/blob/main/snakemake/scripts/fasta_compare.py) = Supplementary script that can be run after the core MGE pipeline is finished. It will compare barcodes produced using different parameter combinations (from one run or multiple runs) for each sample, ranks each barcode 1-5 based on [BOLD BIN criteria](https://v3.boldsystems.org/index.php/resources/handbook?chapter=2_databases.html&section=bins), and select the 'best' (BOLD BIN compliant) barcode.
-
 
 
 # Contributing #
@@ -413,9 +404,9 @@ See `scripts/`
 
   ## To do ##
 - Split Snakefile into .smk files
-- Integrate gene_fetch.py into workflow.
-- Add pre-MGE 
-- Generate RO-crates.
+- Integrate Gene fetch into workflow.
+- Add pre-MGE rule to subset very large input files (Based on file size or sequence number related)
+- Get workflow to generate RO-crates.
 
 
 
