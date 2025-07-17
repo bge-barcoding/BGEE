@@ -2,16 +2,16 @@
 run_name: "run1"
 
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "./BGEE/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
+mge_path: "/path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 
 # Path to samples.csv
-samples_file: "./samples_files.csv"
+samples_file: "/path/to/input/samples/file/samples.csv"
 
 # Path to references.csv
-sequence_reference_file: "./sequence_references.csv"
+sequence_reference_file: "/path/to/input/reference/sequence/csv/sequence_references.csv"
 
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "./BGEE_outputs/run1"
+output_dir: "/path/to/output/directory"
 
 ## MGE running parameters
 # Exonerate relative score threshold parameter
@@ -25,22 +25,20 @@ s:
   - 50
   - 100
   
-# Post-processing of aligned reads for cleaning (using fasta_cleaner.py)
-run_fasta_cleaner: true  # Set false to skip fasta_cleaner step
-
-# Default parameters
+# 'Cleaning' of recovered barcode sequences
 fasta_cleaner:
-  consensus_threshold: 0.5
-  human_threshold: 0.95
-  at_difference: 0.1
-  at_mode: "absolute"
-  outlier_percentile: 90.0
-  disable_human: false
-  disable_at: false
-  disable_outliers: false
-  reference_dir: null 
+  consensus_threshold: 0.5  # 
+  human_threshold: 0.95     # Threshold for human COI similarity (e.g. >95% similarity = read removed)
+  at_difference: 0.1        # Maximum allowed difference in AT content between each read and the consensus before filtering (e.g. if consensus AT content = 0.65, and a read has <0.55 or >0.75 AT content, discard it (if in "absolute" mode)
+  at_mode: "absolute"       # absolute (remove reads if AT content differs from consensus by more than threshold in either direction), higher (remove reads with AT content above consensus + threshold), lower (remove reads with AT content below consensus - threshold)
+  outlier_percentile: 90.0  # Threshold for 'deviant' read removal (e.g. the bottom 90% of sequences (most similar to consensus) are kept)
+  disable_human: false      # If false, 'human_cox1_filter.py' will run
+  disable_at: false         # If false, 'at_content_filter.py' will run
+  disable_outliers: false   # If false, 'statistical_outliers.py' will run
+  reference_dir: null       # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to references
 
-# Comparison of consensus sequences produced via MGE and fasta_cleaner
+
+# Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
 # Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
 run_fasta_compare: true  # Set false to skip fasta_compare step
 
@@ -49,6 +47,7 @@ fasta_compare:
   verbose: false
 
 # Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
+# Rules have dynamic memory scaling upon retry (mem_mb * retry #).
 rules:
   fastp_pe_merge:
     mem_mb: 8192
@@ -87,12 +86,14 @@ rules:
     threads: 2
     
   MitoGeneExtractor_merge:
-    mem_mb: 15360
-    threads: 4
+    mem_mb: 20480
+    threads: 6
+    partition: medium
     
   MitoGeneExtractor_concat:
-    mem_mb: 15360
-    threads: 4
+    mem_mb: 20480
+    threads: 6
+    partition: medium
     
   rename_and_combine_cons_merge:
     mem_mb: 2048
@@ -110,13 +111,53 @@ rules:
     mem_mb: 4096
     threads: 2
     
-  fasta_cleaner_merge:
+  human_cox1_filter_merge:
+    mem_mb: 10240
+    threads: 8
+    
+  at_content_filter_merge:
+    mem_mb: 15360
+    threads: 8
+    
+  statistical_outlier_filter_merge:
     mem_mb: 8192
+    threads: 8
+    
+  reference_filter_merge:
+    mem_mb: 4096
     threads: 4
     
-  fasta_cleaner_concat:
-    mem_mb: 8192
+  consensus_generation_merge:
+    mem_mb: 4096
     threads: 4
+    
+  aggregate_filter_metrics_merge:
+    mem_mb: 2048
+    threads: 1
+
+  human_cox1_filter_concat:
+    mem_mb: 10240
+    threads: 8
+  
+  at_content_filter_concat:
+    mem_mb: 15360
+    threads: 8
+    
+  statistical_outlier_filter_concat:
+    mem_mb: 4096
+    threads: 1
+    
+  reference_filter_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  consensus_generation_concat:
+    mem_mb: 4096
+    threads: 4
+    
+  aggregate_filter_metrics_concat:
+    mem_mb: 2048
+    threads: 1
     
   extract_stats_to_csv_merge:
     mem_mb: 4096
@@ -134,6 +175,14 @@ rules:
     mem_mb: 4096
     threads: 4
     
+  remove_fasta_cleaner_files:
+    mem_mb: 4096
+    threads: 4
+    
+  remove_exonerate_intermediates:
+    mem_mb: 4096
+    threads: 2
+
   cleanup_files:
     mem_mb: 1024
     threads: 1
