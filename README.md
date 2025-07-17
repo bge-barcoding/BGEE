@@ -11,7 +11,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Contributing](#Contributing)
 
 # Requirements #
-- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) version 1.9.6 installed.
+- [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) version 1.9.6 installed. Clone repository and follow installation instructons. 
 - Paired-end reads in .fastq.gz or .fastq format.
 - samples_file.csv (generated manually, or as outlined [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)) if working from BOLD sample metdata.
 - sequence_references_file.csv (generated manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
@@ -301,8 +301,7 @@ max-jobs-per-second: 1            # Controls rate Snakemake submits jobs to SLUR
 - [snakemake_run.sh](https://github.com/SchistoDan/BGEE/blob/main/snakemake_run.sh) handles submission of the snakemake command to the cluster.
 - The working directory will first be unlocked (using `--unlock`) and then the snakemake workflow will be run.
 - Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/ directory') - This will submit `snakemake_run.sh` to the head/login node of your cluster, and will orchestrator SLURM job submissions for all snakemake workflow steps.
-
-  
+ 
 
 
 
@@ -393,7 +392,6 @@ output_dir/
 ```
 
 
-
 # Contributing #
 - Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
 - This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
@@ -401,13 +399,11 @@ output_dir/
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
 
 
-
   ## To do ##
 - Split Snakefile into .smk files
 - Integrate Gene fetch into workflow.
 - Add pre-MGE rule to subset very large input files (Based on file size or sequence number related)
 - Get workflow to generate RO-crates.
-
-
-
+- Integrate gene_fetch.py into workflow.
+- Generate RO-crates.
   

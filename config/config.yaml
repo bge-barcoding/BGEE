@@ -1,5 +1,5 @@
 # MGE run name identifier
-run_name: "RUN_1"
+run_name: "run1"
 
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
 mge_path: "/path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
@@ -182,7 +182,7 @@ rules:
   remove_exonerate_intermediates:
     mem_mb: 4096
     threads: 2
-    
+
   cleanup_files:
     mem_mb: 1024
     threads: 1

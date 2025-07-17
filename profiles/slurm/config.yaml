@@ -1,4 +1,5 @@
 # profiles/slurm/config.yaml
+
 executor: slurm
 
 default-resources:

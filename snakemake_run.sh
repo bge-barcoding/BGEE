@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ## Conda environment
-source PATH/TO/conda.sh
+source /path/to/conda/etc/profile.d/conda.sh
 
 conda activate bgee_env
 
@@ -9,7 +9,7 @@ conda activate bgee_env
 
 # Setup logging
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-RUN_ID="RUN_1"          			# CHANGE RUN ID FOR EACH NEW RUN
+RUN_ID="Run_1"										# CHANGE RUN ID FOR EACH NEW RUN
 LOG_FILE="snakemake_${TIMESTAMP}.log"
 
 # Function for timestamped logging
@@ -32,18 +32,22 @@ log_with_timestamp "Conda environment: $CONDA_DEFAULT_ENV"
 
 
 ##Snakemake
+export SNAKEFILE="./workflow/Snakefile"
+export CONFIG="./config/config.yaml"
+export PROFILE="./profiles/slurm/"
+
 # Unlock directory
 log_with_timestamp "Unlocking Snakemake directory..."
 
-snakemake --profile ./profiles/slurm/ --snakefile ./workflow/Snakefile --configfile ./config/config.yaml --unlock
+snakemake --profile $PROFILE --snakefile $SNAKEFILE --configfile $CONFIG --unlock
 
 
 # Run snakemake workflow with profile
 log_with_timestamp "Starting workflow execution..."
 
-snakemake --profile ./profiles/slurm/ \
-    --snakefile ./workflow/Snakefile \
-    --configfile ./config/config.yaml \
+snakemake --profile $PROFILE \
+    --snakefile $SNAKEFILE \
+    --configfile $CONFIG \
     --rerun-incomplete \
     --cores all \
     2>&1 | tee -a "$LOG_FILE"
