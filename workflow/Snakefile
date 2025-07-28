@@ -98,13 +98,15 @@ def parse_sequence_references(sequence_reference_file):
 # Load parameters from config file
 samples = parse_samples(config["samples_file"])
 sequence_references = parse_sequence_references(config["sequence_reference_file"])
+run_name = config["run_name"]
 
 r = config["r"]
 s = config["s"]
-run_name = config["run_name"]
+n = config["n"]
+C = config["C"]
+t = config["t"]
 mge_path = config["mge_path"]
 
-#run_fasta_cleaner = config.get("run_fasta_cleaner", True)  # Default to True
 
 # Load fasta_cleaner parameters
 fasta_cleaner_params = config.get("fasta_cleaner", {	
@@ -715,6 +717,9 @@ rule MitoGeneExtractor_merge:
         err=os.path.join(output_dir_merge, "err/{sample}_r_{r}_s_{s}_summary_{reference_name}.err")
     params:
         mge_executor=config["mge_path"],
+        n=config["n"],
+        C=config["C"],
+        t=config["t"],
         output_dir=output_dir_merge,
         vulgar_dir=lambda wildcards: os.path.join(output_dir_merge, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_{wildcards.reference_name}/")
     threads: rule_resources["MitoGeneExtractor_merge"]["threads"]
@@ -780,7 +785,9 @@ rule MitoGeneExtractor_merge:
         -c {params.output_dir}/consensus/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_con_ \\
         -V {params.vulgar_dir} \\
         -r {wildcards.r} -s {wildcards.s} \\
-        -n 0 -C 5 -t 0.5 \\
+        -n {params.n} \\
+        -C {params.C} \\
+        -t {params.t} \\
         --temporaryDirectory {params.output_dir} \\
         --verbosity 10 \\
         >> {log.out} 2>> {log.err} || {{
@@ -820,6 +827,9 @@ rule MitoGeneExtractor_concat:
         err=os.path.join(output_dir_concat, "err/{sample}_r_{r}_s_{s}_summary_{reference_name}.err")
     params:
         mge_executor=config["mge_path"],
+        n=config["n"],
+        C=config["C"],
+        t=config["t"],		
         output_dir=output_dir_concat,
         vulgar_dir=lambda wildcards: os.path.join(output_dir_concat, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_{wildcards.reference_name}/")
     threads: rule_resources["MitoGeneExtractor_concat"]["threads"]
@@ -884,7 +894,9 @@ rule MitoGeneExtractor_concat:
         -c {params.output_dir}/consensus/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_con_ \\
         -V {params.vulgar_dir} \\
         -r {wildcards.r} -s {wildcards.s} \\
-        -n 0 -C 5 -t 0.5 \\
+        -n {params.n} \\
+        -C {params.C} \\
+        -t {params.t} \\
         --temporaryDirectory {params.output_dir} \\
         --verbosity 10 \\
         >> {log.out} 2>> {log.err} || {{
