@@ -1,50 +1,63 @@
-# MGE run name identifier
-run_name: "run1"
+# BGEE run name identifier
+run_name: "run_1"
 
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "/path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
+mge_path: "apps/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 
 # Path to samples.csv
-samples_file: "/path/to/input/samples/file/samples.csv"
+samples_file: "path/to/samples.csv"
 
 # Path to references.csv
-sequence_reference_file: "/path/to/input/reference/sequence/csv/sequence_references.csv"
+sequence_reference_file: "path/to/sequence_references.csv"
 
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "/path/to/output/directory"
+output_dir: "path/to/output/dir"
 
-## MGE running parameters
+
+
+## MGE running parameters (see https://github.com/cmayer/MitoGeneExtractor/tree/main?tab=readme-ov-file#command-line-options)
 # Exonerate relative score threshold parameter
 r:
   - 1
   - 1.3
   - 1.5
-
 # Exonerate minimum score threshold parameter
 s:
   - 50
   - 100
+# Number of bp to extend beyond the Exonerate alignment
+n: 0
+# Genetic code (see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi)
+C: 5
+# Consensus threshold (e.g. 0.5 = 50%)
+t: 0.5
   
-# 'Cleaning' of recovered barcode sequences
+  
+
+# Post-processing of aligned reads for cleaning (using five supplementary scripts)
+# human coi filtering -> at content filtering -> statistical outlier filtering -> (optional) reference-base filtering -> 'cleaned' consensus generation
+
+# Default parameters
 fasta_cleaner:
-  consensus_threshold: 0.5  # 
-  human_threshold: 0.95     # Threshold for human COI similarity (e.g. >95% similarity = read removed)
-  at_difference: 0.1        # Maximum allowed difference in AT content between each read and the consensus before filtering (e.g. if consensus AT content = 0.65, and a read has <0.55 or >0.75 AT content, discard it (if in "absolute" mode)
-  at_mode: "absolute"       # absolute (remove reads if AT content differs from consensus by more than threshold in either direction), higher (remove reads with AT content above consensus + threshold), lower (remove reads with AT content below consensus - threshold)
-  outlier_percentile: 90.0  # Threshold for 'deviant' read removal (e.g. the bottom 90% of sequences (most similar to consensus) are kept)
-  disable_human: false      # If false, 'human_cox1_filter.py' will run
-  disable_at: false         # If false, 'at_content_filter.py' will run
-  disable_outliers: false   # If false, 'statistical_outliers.py' will run
-  reference_dir: null       # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to references
+  consensus_threshold: 0.5
+  human_threshold: 0.95
+  at_difference: 0.1
+  at_mode: "absolute"
+  outlier_percentile: 90.0
+  disable_human: false
+  disable_at: false
+  disable_outliers: false
+  reference_dir: null   # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to a parent directory (flat structure) containing '{sample}_reference.fasta' files.
 
 
-# Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
-# Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
+# Comparison and selection of the 'best' consensus sequence produced by MGE and fasta_cleaner for each sample (using fasta_compare.py)
 run_fasta_compare: true  # Set false to skip fasta_compare step
 
 fasta_compare:
-  target: "cox1"
-  verbose: false
+  target: "cox1"  # Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
+  verbose: false  # Enable verbose logging (default: false)
+
+
 
 # Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
 # Rules have dynamic memory scaling upon retry (mem_mb * retry #).
@@ -124,12 +137,12 @@ rules:
     threads: 8
     
   reference_filter_merge:
-    mem_mb: 4096
-    threads: 4
+    mem_mb: 8192
+    threads: 8
     
   consensus_generation_merge:
-    mem_mb: 4096
-    threads: 4
+    mem_mb: 8192
+    threads: 8
     
   aggregate_filter_metrics_merge:
     mem_mb: 2048
@@ -148,12 +161,12 @@ rules:
     threads: 1
     
   reference_filter_concat:
-    mem_mb: 4096
-    threads: 4
+    mem_mb: 8192
+    threads: 8
     
   consensus_generation_concat:
-    mem_mb: 4096
-    threads: 4
+    mem_mb: 8192
+    threads: 8
     
   aggregate_filter_metrics_concat:
     mem_mb: 2048
@@ -182,7 +195,7 @@ rules:
   remove_exonerate_intermediates:
     mem_mb: 4096
     threads: 2
-
+    
   cleanup_files:
     mem_mb: 1024
     threads: 1
