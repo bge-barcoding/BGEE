@@ -46,7 +46,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 
 
 
-# Running: #
+# Workflow execution: #
 ## Clone BGEE github repository and set up conda environment ##
 - [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
@@ -59,7 +59,7 @@ git status
 ## Generate samples.csv ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
 - Must contain ID, forward (read paths), reverse (read paths), and taxid columns (see below for example). Column 1 can be named 'ID', 'process_id', 'Process ID', 'process id', 'Process id', 'PROCESS ID', 'sample', 'SAMPLE', or 'Sample'.
-- Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. It is therefore recommended that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
+- Due to regex matching and statistics aggregation, the sample's 'ID' will be considered the string before the first underscore across output files. It is therefore necessary that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
 - Taxid's can be found manually by searching the expected species/genus/family of each sample in the [NCBI taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy), or retrieved from the sample_metadata.csv file output by the [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
   
 **samples.csv example**
@@ -72,13 +72,14 @@ git status
 ## Gathering sample-specific pseudo-references ##
 - This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch). gene-fetch will retrieve the necessary protein pseudo-references for each sample using the samples taxonomic identifier (taxid) or taxonomic lineages for each sample.
 - Must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.
+- Similarly to `samples.csv`, `proces_id` and `reference_name` must not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or ref-1 instead of ref_1.
 
 **samples.csv example**
 | process_id | reference_name | protein_reference_path | 
 | --- | --- | --- |
-| BSNHM002-24  | BSNHM002-24 | path/to/BSNHM002-24.fasta |
-| BSNHM038-24 | BSNHM038-24 | path/to/BSNHM038-24.fasta |
-| BSNHM046-24 | BSNHM046-24 | path/toBSNHM046-24.fasta |
+| BSNHM002-24  | ref-1 | path/to/BSNHM002-24.fasta |
+| BSNHM038-24 | ref-2 | path/to/BSNHM038-24.fasta |
+| BSNHM046-24 | ref-3 | path/toBSNHM046-24.fasta |
 
 ## Customising snakemake configuration file ##
 - Update config.yaml with neccessary paths and variables.
@@ -114,8 +115,14 @@ r:
 s:
   - 50
   - 100
-  
-# 'Cleaning' of recovered barcode sequences
+# Number of bp to extend beyond the Exonerate alignment
+n: 0
+# Genetic code (see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi)
+C: 5
+# Consensus threshold (e.g. 0.5 = 50%)
+t: 0.5
+
+## 'Cleaning' of recovered barcode sequences
 fasta_cleaner:
   consensus_threshold: 0.5  # 
   human_threshold: 0.95     # Threshold for human COI similarity (e.g. >95% similarity = read removed)
@@ -128,7 +135,7 @@ fasta_cleaner:
   reference_dir: null       # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to references
 
 
-# Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
+## Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
 # Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
 run_fasta_compare: true  # Set false to skip fasta_compare step
 
@@ -136,7 +143,7 @@ fasta_compare:
   target: "cox1"
   verbose: false
 
-# Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
+## Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
 # Rules have dynamic memory scaling upon retry (mem_mb * retry #).
 rules:
   fastp_pe_merge:
@@ -279,7 +286,7 @@ rules:
 ```
 
 # Cluster configuration using profiles/slurm/config.yaml #
-- See `profiles/slurm/config.yaml` below for SLURM cluster submission parameters. You will need to change `slurm_parition` to a suitable parition on your cluster.
+- See `profiles/slurm/config.yaml` below for SLURM cluster submission parameters. You will need to change `slurm_parition` to a suitable parition for your cluster.
 ```
 # profiles/slurm/config.yaml
 executor: slurm
@@ -393,10 +400,11 @@ output_dir/
 
 
 # Contributing #
-- Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
 - This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
-- Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
+- - Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
+- Please feel free to submit issues, fork the repository, and create pull requests for any enhancements or bugs.
+
 
 
   ## To do ##
@@ -404,6 +412,4 @@ output_dir/
 - Integrate Gene fetch into workflow.
 - Add pre-MGE rule to subset very large input files (Based on file size or sequence number related)
 - Get workflow to generate RO-crates.
-- Integrate gene_fetch.py into workflow.
-- Generate RO-crates.
-  
+ 
