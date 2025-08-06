@@ -13,7 +13,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 # Requirements #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) version 1.9.6 installed. Clone repository and follow installation instructons. 
 - Paired-end reads in .fastq.gz or .fastq format.
-- samples_file.csv (generated manually, or as outlined [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)) if working from BOLD sample metadata.
+- samples_file.csv (generated manually, or as outlined below if working from BOLD sample metadata).
 - sequence_references_file.csv (generated manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file) within the workflow).
 - Activated conda env (see bgee_env.yaml).
 
@@ -28,20 +28,21 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
     - Raw read quality control and merging - Adapter, trimming, quality trimming, poly-g trimming, deduplication, and merging of paired-end reads using [fastp](https://github.com/OpenGene/fastp) (fastp_pe_merge).
     - 'Clean' headers of input files, as required by MitoGeneExtractor (clean_headers_merge), and concentation of associated log files (Aggregate_clean_headers_logs).
 ![image](https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96)
-2. Refernce-guided barcode recovery using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
-3. Rename raw consensus sequence headers and concatenation into multi-FASTA (rename_and_combine_cons_concat & rename_and_combine_cons_merge) (uses supplementary [rename_headers.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/rename_headers.py).
-4. Remove any remaining exonerate intermediate (Concatenated_exonerate_input_*) files leftover after MGE (remove_exonerate_intermediates).
-5. Create list of MGE (FASTA) alignment files for downstream processing (create_alignment_log).
-6. Filter MGE alignment files to remove low-quality, contaminant, or outlier sequences before repeat consensus sequence generation.
-   - Remove aligned reads with similarity to human COI (a common contaminant of museum specimens) (uses supplementary [human_cox1_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/human_cox1_filter.py).
-   - Remove aligned reads with AT content over and/or below a specified threshold (high AT content can be indicative of contamination (e.g. fungal)) (uses supplementary [at_content_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/at_content_filter.py).
-   - Remove reads that are statistical outliers compared to the original consensus (uses supplementary [statistical_outliers.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/statistical_outlier_filter.py).
-   - [optional] Remove reads with similarity to supplied reference sequence(s) (uses supplementary [reference_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/reference_filter.py).
-   - Generation of 'cleaned' consensus sequence (uses supplementary [consensus_generator.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/consensus_generator.py).
-   - Aggregate metrics from each stage of filtering (uses supplementary [aggregate_filter_metrics.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/aggregate_filter_metrics.py).
+2. Retrieval of sample-specific pseudo-references from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
+3. Protein reference-guided barcode recovery using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
+4. Rename raw consensus sequence headers and concatenation into multi-FASTA (rename_and_combine_cons_concat & rename_and_combine_cons_merge) (uses supplementary [rename_headers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/rename_headers.py).
+5. Remove any remaining exonerate intermediate (Concatenated_exonerate_input_*) files leftover after MGE (remove_exonerate_intermediates).
+6. Create list of MGE (FASTA) alignment files for downstream processing (create_alignment_log).
+7. Filter MGE alignment files to remove low-quality, contaminant, or outlier sequences before repeat consensus sequence generation.
+   - Remove aligned reads with similarity to human COI (a common contaminant of museum specimens) (uses supplementary [human_cox1_filter.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/human_cox1_filter.py).
+   - Remove aligned reads with AT content over and/or below a specified threshold (high AT content can be indicative of contamination (e.g. fungal)) (uses supplementary [at_content_filter.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/at_content_filter.py).
+   - Remove reads that are statistical outliers compared to the original consensus (uses supplementary [statistical_outliers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/statistical_outlier_filter.py).
+   - [optional] Remove reads with similarity to supplied reference sequence(s) (uses supplementary [reference_filter.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/reference_filter.py).
+   - Generation of 'cleaned' consensus sequence (uses supplementary [consensus_generator.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/consensus_generator.py).
+   - Aggregate metrics from each stage of filtering (uses supplementary [aggregate_filter_metrics.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/aggregate_filter_metrics.py).
    - Remove intermediate files and unecessary logs generated during the consensus cleaning process (remove_fasta_cleaner_files).
-8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria: Rank1 = No ambiguous bases & longest stretch ≥ 650, Rank3 = No ambiguous bases & longest stretch ≥ 500, Rank3 = No ambiguous bases & 300 ≤ longest stretch ≤ 499, Rank4 = No ambiguous bases &1 ≤ longest stretch ≤ 299, Rank5 = Has ambiguous bases. 'Relaxed' ranking criteria also available (see docstring of supplementary [fasta_compare](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/fasta_compare.py).
-9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
+8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria: Rank1 = No ambiguous bases & longest stretch ≥ 650, Rank3 = No ambiguous bases & longest stretch ≥ 500, Rank3 = No ambiguous bases & 300 ≤ longest stretch ≤ 499, Rank4 = No ambiguous bases &1 ≤ longest stretch ≤ 299, Rank5 = Has ambiguous bases. 'Relaxed' ranking criteria also available (see docstring of supplementary [fasta_compare](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/fasta_compare.py).
+9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
 10. Remove temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
@@ -70,7 +71,7 @@ git status
 | BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 3084599 |
 
 ## Gathering sample-specific pseudo-references ##
-- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow. If enabled (in the config.yaml), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the samples taxonomic identifier (taxid)/taxonomic lineages for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key). 
+- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow. If enabled (in the config.yaml by setting `run_gene_fetch` to 'true'), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the samples taxonomic identifier (taxid)/taxonomic lineages for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key). 
 - Must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.
 
 **sample_references.csv example**
@@ -81,10 +82,8 @@ git status
 | BSNHM046-24 | BSNHM046-24 | path/toBSNHM046-24.fasta |
 
 ## Customising snakemake configuration file ##
-- Update config.yaml with neccessary paths and variables.
-  - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate ('r' and 's') run paramters.
-  - See [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) for information on filtering variables and thresholds (default is likely suitable in most cases).
-- Rule-specific resources in the [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) - Each rule can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
+- Update `config/config.yaml` with neccessary paths and variables - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for a more detailed explanation of Exonernate run paramters.
+- Rule-specific resources in the [config.yaml](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/config/config.yaml) - Each rule can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
 ```# config/config.yaml
 
 ## General BGEE pipeline parameters and paths
@@ -181,13 +180,13 @@ rules:
     mem_mb: 2048
     threads: 2
   MitoGeneExtractor_merge:
-    mem_mb: 20480           # Rule has dynamic memory scaling upon retry (mem_mb * retry #)
+    mem_mb: 20480
     threads: 6
-    partition: medium
+    partition: medium        # Change according to your available partitions
   MitoGeneExtractor_concat:
-    mem_mb: 20480           # Rule has dynamic memory scaling upon retry (mem_mb * retry #)
+    mem_mb: 20480
     threads: 6
-    partition: medium
+    partition: medium        # Change according to your available partitions
   rename_and_combine_cons_merge:
     mem_mb: 2048
     threads: 4
@@ -259,36 +258,26 @@ rules:
     threads: 1
 ```
 
-# Cluster configuration using profiles/slurm/config.yaml #
-- See `profiles/slurm/config.yaml` below for SLURM cluster submission parameters. You will need to change `slurm_parition` to a suitable parition on your cluster.
-```
-# profiles/slurm/config.yaml
-executor: slurm
-
-default-resources:
-  - slurm_partition=medium
-  - slurm_extra="--ntasks=1 --signal=USR2@90 --no-requeue"
-    # --ntasks=1: Run one instance of the workflow.
-    # --signal=USR2@90: Sets up a signal to be sent to the job when it approaches its time limit.
-    # --no-requeue: Prevents the job from being automatically requeued if it fails (clashes with snakemake retry memory scaling).
-  
-jobs: 10                          # Maximum number of concurrent jobs run on cluster. # Remember not to exceed any thread limits. E.g. 20 concurrent jobs × 16 threads per job = up to 320 threads!
-latency-wait: 60                  # Wait 60 seconds before checking job status
-local-cores: 0                    # Prevents fallback to local execution upon job failure
-max-jobs-per-second: 1            # Controls rate Snakemake submits jobs to SLURM. Prevents overwhelming scheduler  
-```
+# Cluster configuration using Snakemake profiles #
+- See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters.
+- The profile (`profiles/local` or profiles/slurm`) will need to be changed in `snakemake_run.sh` depending on your use case.
 
 # Cluster submission #
-- [snakemake_run.sh](https://github.com/SchistoDan/BGEE/blob/main/snakemake_run.sh) handles submission of the snakemake command to the cluster.
-- The working directory will first be unlocked (using `--unlock`) and then the snakemake workflow will be run.
-- Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/ directory') - This will submit `snakemake_run.sh` to the head/login node of your cluster, and will orchestrator SLURM job submissions for all snakemake workflow steps.
- 
-
+- [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster.
+- The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run.
+- Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/ directory') - This will submit `snakemake_run.sh` to the head/login node of your cluster:
+  - If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job.
+  - If using `profiles/local`, all workflow steps will be run as a single job. 
 
 
 # Results structure #
 ```
 output_dir/
+├── references/
+│   ├── protein/                                               # Contains FASTA pseudo-references for each sample.
+│   ├── protein/                                               # Contains GenBank records corresponding to fetched pseudo-references (if 'genbank: true' set in config.yaml).
+│   └── sequence_references.csv                                # Metadata on fetched pseudo-references.
+│
 ├── merge_mode/
 │   ├── consensus/
 │   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas      # Individual consensus files for each sample/parameter combination. 
@@ -382,9 +371,6 @@ output_dir/
 
   ## To do ##
 - Split Snakefile into .smk files
-- Integrate Gene fetch into workflow.
-- Add pre-MGE rule to subset very large input files (Based on file size or sequence number related)
+- Add pre-MGE rule to subset very large input files (Based on file size or sequence number?)
 - Get workflow to generate RO-crates.
-- Integrate gene_fetch.py into workflow.
-- Generate RO-crates.
   
