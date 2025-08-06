@@ -1,4 +1,4 @@
-name: mge_env
+name: bgee_env
 channels:
   - conda-forge
   - bioconda
@@ -7,7 +7,9 @@ dependencies:
   - exonerate=2.4.0
   - mamba=1.5.8
   - python=3.10.14
-  - snakemake=7.32.4
+  - snakemake=9.5.1
+  - snakemake-executor-plugin-slurm=1.4.0
+  - gene-fetch>=1.0.15
   - trim-galore=0.6.10
   - fastp=0.23.4
   - pigz=2.8
