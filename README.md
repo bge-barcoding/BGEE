@@ -373,6 +373,5 @@ output_dir/
 
   ## To do ##
 - Split Snakefile into .smk files
-- Add pre-MGE rule to subset very large input files (Based on file size or sequence number?)
-- Get workflow to generate RO-crates.
+- Add pre-MGE rule to subset/downsample very large input files (Based on file size or sequence number?)
   
