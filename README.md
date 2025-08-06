@@ -27,7 +27,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
   - 'merge:
     - Raw read quality control and merging - Adapter, trimming, quality trimming, poly-g trimming, deduplication, and merging of paired-end reads using [fastp](https://github.com/OpenGene/fastp) (fastp_pe_merge).
     - 'Clean' headers of input files, as required by MitoGeneExtractor (clean_headers_merge), and concentation of associated log files (Aggregate_clean_headers_logs).
-![image](https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96)
+<img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="400"/>
 2. Retrieval of sample-specific pseudo-references from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
 3. Protein reference-guided barcode recovery using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
 4. Rename raw consensus sequence headers and concatenation into multi-FASTA (rename_and_combine_cons_concat & rename_and_combine_cons_merge) (uses supplementary [rename_headers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/rename_headers.py).
@@ -52,8 +52,8 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 - [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
 git clone https://github.com/bge-barcoding/BGEE.git [path/to/desired/install/location/]
-cd BGEE/installation/dir/
-conda env create -f /workflow/scripts/bgee_env.yaml
+cd installation/dir/BGEE
+conda env create -f bgee_env.yaml
 git status
 ```
 
@@ -277,7 +277,7 @@ rules:
 output_dir/
 ├── references/
 │   ├── protein/                                               # Contains FASTA pseudo-references for each sample.
-│   ├── protein/                                               # Contains GenBank records corresponding to fetched pseudo-references (if 'genbank: true' set in config.yaml).
+│   ├── genbank/                                               # Contains GenBank records corresponding to fetched pseudo-references (if 'genbank: true' set in config.yaml).
 │   └── sequence_references.csv                                # Metadata on fetched pseudo-references.
 │
 ├── merge_mode/
