@@ -63,16 +63,25 @@ git status
 
 ## Generate sample input file ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
-- Must contain ID, forward (read paths), reverse (read paths), and taxid columns (see below for example). Column 1 can be named 'ID', 'process_id', 'Process ID', 'process id', 'Process id', 'PROCESS ID', 'sample', 'SAMPLE', or 'Sample'.
+- Must contain `ID`, `forward` (read paths), `reverse` (read paths), and `taxid` **or** `hierarchical taxonomy` columns (see below for examples).
+- Column 1 can be named 'ID', 'process_id', 'Process ID', 'process id', 'Process id', 'PROCESS ID', 'sample', 'SAMPLE', or 'Sample'.
 - Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. It is therefore recommended that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
-- Taxid's can be found manually by searching the expected species/genus/family of each sample in the [NCBI taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy), or retrieved from the sample_metadata.csv file output by the [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
+- Taxid's can be found manually by searching the expected species/genus/family of each sample in the [NCBI taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy).
+- If hierarchical taxonomic information for each sample is provided, `Gene Fetch` will, starting from species, find the closest valid taxid on NCBI for the provided taxonomy before proceeding with pseudo-reference fetching.
   
-**samples.csv example**
+**samples.csv example (taxids)**
 | ID | forward | reverse | taxid |
 | --- | --- | --- | --- |
 | BSNHM002-24  | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 177658 |
 | BSNHM038-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 177627 |
 | BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 3084599 |
+
+**samples.csv example (hierarchical taxonomy)**
+| ID | forward | reverse | phylum | class | order | family | genus | species |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | 
+| BSNHM002-24  | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | phylum | class | order | family | genus | species |
+| BSNHM038-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | phylum | class | order | family | genus | species |
+| BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | phylum | class | order | family | genus | species |
 
 ## Gathering sample-specific pseudo-references ##
 - This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow. If enabled (in the config.yaml by setting `run_gene_fetch` to 'true'), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the samples taxonomic identifier (taxid)/taxonomic lineages for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key). 
