@@ -266,12 +266,12 @@ rules:
 
 # Cluster configuration using Snakemake profiles #
 - See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters.
-- The profile (`profiles/local` or `profiles/slurm`) will need to be changed in `snakemake_run.sh` depending on your use case.
+- The profile (`profiles/local` or `profiles/slurm`) will need to be changed depending on your system (see `$PROFILE` variable in `snakemake_run.sh`).
 
 # Cluster submission #
 - [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster.
 - The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run.
-- Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/ directory') - This will submit `snakemake_run.sh` to the head/login node of your cluster:
+- Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/` directory) - This will submit `snakemake_run.sh` to the head/login node of your cluster:
   - If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job.
   - If using `profiles/local`, all workflow steps will be run as a single job. 
 
