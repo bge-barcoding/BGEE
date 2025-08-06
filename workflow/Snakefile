@@ -16,7 +16,7 @@ from pathlib import Path
 
 # Config validation
 def validate_config(config):
-    required_keys = ['samples_file', 'sequence_reference_file', 'output_dir', 'r', 's', 'run_name', 'mge_path']
+    required_keys = ['samples_file', 'output_dir', 'r', 's', 'run_name', 'mge_path']
     missing_keys = [key for key in required_keys if key not in config]
     
     if missing_keys:
@@ -28,13 +28,46 @@ def validate_config(config):
         sys.stderr.write(f"WARNING: Samples file not found: {config['samples_file']}\n")
         sys.exit(1)
     
-    if not os.path.exists(config['sequence_reference_file']):
-        sys.stderr.write(f"WARNING: Sequence reference file not found: {config['sequence_reference_file']}\n")
-        sys.exit(1)
-    
     if not os.path.exists(config['mge_path']):
         sys.stderr.write(f"WARNING: MitoGeneExtractor path not found: {config['mge_path']}\n")
         sys.exit(1)
+    
+    # Validate gene_fetch configuration
+    run_gene_fetch = config.get("run_gene_fetch", False)
+    if not isinstance(run_gene_fetch, bool):
+        sys.stderr.write("WARNING: 'run_gene_fetch' must be a boolean (true/false)\n")
+        sys.exit(1)
+    
+    if run_gene_fetch:
+        # Validate gene_fetch parameters
+        gene_fetch_config = config.get("gene_fetch", {})
+        required_gene_fetch_keys = ['email', 'api_key', 'gene', 'input_type']
+        missing_gene_fetch_keys = [key for key in required_gene_fetch_keys if key not in gene_fetch_config or not gene_fetch_config[key]]
+        
+        if missing_gene_fetch_keys:
+            sys.stderr.write(f"WARNING: Missing required gene_fetch configuration parameters: {', '.join(missing_gene_fetch_keys)}\n")
+            sys.exit(1)
+            
+        # Validate input_type value
+        input_type = gene_fetch_config.get("input_type", "").lower()
+        if input_type not in ["taxid", "hierarchical"]:
+            sys.stderr.write("WARNING: 'input_type' must be either 'taxid' or 'hierarchical'\n")
+            sys.exit(1)
+            
+        # Validate samples_file exists
+        samples_file = gene_fetch_config.get("samples_file", config.get("samples_file", ""))
+        if not samples_file or not os.path.exists(samples_file):
+            sys.stderr.write(f"WARNING: Gene fetch samples file not found: {samples_file}\n")
+            sys.exit(1)
+    else:
+        # If not using gene_fetch, validate sequence_reference_file exists
+        if 'sequence_reference_file' not in config:
+            sys.stderr.write("WARNING: 'sequence_reference_file' is required when run_gene_fetch is false\n")
+            sys.exit(1)
+        
+        if not os.path.exists(config['sequence_reference_file']):
+            sys.stderr.write(f"WARNING: Sequence reference file not found: {config['sequence_reference_file']}\n")
+            sys.exit(1)
     
     # Validate r and s parameters
     if not isinstance(config['r'], list) or not config['r']:
@@ -93,11 +126,10 @@ def parse_sequence_references(sequence_reference_file):
 
 
 
-# ===== PARAMETER SETUP =====
+# ===== PARAMETER SETUP & CONFIG PARSING =====
 
 # Load parameters from config file
 samples = parse_samples(config["samples_file"])
-sequence_references = parse_sequence_references(config["sequence_reference_file"])
 run_name = config["run_name"]
 
 r = config["r"]
@@ -106,6 +138,15 @@ n = config["n"]
 C = config["C"]
 t = config["t"]
 mge_path = config["mge_path"]
+
+
+# Determine sequence reference file path based on gene_fetch setting
+run_gene_fetch = config.get("run_gene_fetch", False)
+if run_gene_fetch:
+    sequence_reference_file_path = os.path.join(config["output_dir"], "references", "sequence_references.csv")
+else:
+    sequence_reference_file_path = config["sequence_reference_file"]
+
 
 
 # Load fasta_cleaner parameters
@@ -140,53 +181,43 @@ Path(main_output_dir).mkdir(parents=True, exist_ok=True)
 output_dir_merge = os.path.join(main_output_dir, "merge_mode")
 output_dir_concat = os.path.join(main_output_dir, "concat_mode")
 
+# Create references directory if using gene_fetch
+if run_gene_fetch:
+    references_dir = os.path.join(main_output_dir, "references")
+    Path(references_dir).mkdir(parents=True, exist_ok=True)
+
+# Check if reference filtering should be performed
+reference_dir = fasta_cleaner_params.get("reference_dir", None)
+use_reference_filtering = reference_dir and reference_dir not in ["None", "null", "", None]
 
 
 
+# ===== HELPER FUNCTIONS =====
 
-
-# ===== SAMPLE AND REFERENCE PREPARATION =====
-
-#Create lists of samples and corresponding references, and link them
-sample_list = list(samples.keys())
-reference_list = [sequence_references[sample]["reference_name"] for sample in sample_list]
-sample_reference_pairs = list(zip(sample_list, reference_list))
-
+# Handles sequence_reference_file dependency for MGE and file path
+def get_protein_reference(wildcards):
+    """Get protein reference path for a sample"""
+    if run_gene_fetch:
+        # Don't read the CSV - construct the path directly
+        # Assumes gene_fetch creates files like: references/{sample}_protein.faa
+        return os.path.join(main_output_dir, f"references/protein/{wildcards.sample}.fasta")
+    else:
+        # For manual references, we can read the file immediately since it exists
+        sequence_refs = parse_sequence_references(config["sequence_reference_file"])
+        return sequence_refs[wildcards.sample]["protein_path"]
+	
 # Generate all combinations for each sample+reference pair with all r and s values
-def generate_mge_cons_paths(output_dir, sample_ref_pairs, r_values, s_values):
-    paths = []
-    for sample, ref in sample_ref_pairs:
-        for r_val in r_values:
-            for s_val in s_values:
-                paths.append(
-                    os.path.join(output_dir, f"consensus/{sample}_r_{r_val}_s_{s_val}_con_{ref}.fas")
-                )
-    return paths
-
-all_mge_cons_merge = generate_mge_cons_paths(output_dir_merge, sample_reference_pairs, r, s)
-all_mge_cons_concat = generate_mge_cons_paths(output_dir_concat, sample_reference_pairs, r, s)
-
-
-# ===== DIRECTORY SETUP AND LOGGING =====
-
-# Print run parameters from config.yaml
-#print("\n===Parameters loaded from config.yaml===")
-#print(f"-*-Run name: {run_name}\n")
-#print(f"-*-Output directories: {output_dir_merge} (merge mode), {output_dir_concat} (concat mode)\n")
-#print(f"-*-r params: {r}")
-#print(f"-*-s params: {s}\n")
-#print("-*-Sample files:", samples, "\n")
-#print("-*-Sequence references:", sequence_references, "\n")
-#print("-*-reference list:", reference_list, "\n")
-#print("-*-sample reference pairs:", sample_reference_pairs, "\n")
-
-
-
-
-
-
-
-# ===== HELPER FUNCTIONS FOR MODE-SPECIFIC RULES =====
+def get_all_mge_consensus_files(mode):
+    """Generate list of expected consensus files for a given mode"""
+    output_dir = output_dir_merge if mode == "merge" else output_dir_concat
+    files = []
+    
+    for sample in samples.keys():
+        for r_val in r:
+            for s_val in s:
+                files.append(os.path.join(output_dir, f"consensus/{sample}_r_{r_val}_s_{s_val}_con_{sample}.fas"))
+    
+    return files
 
 # Get the right input for merge mode
 def get_mge_input_merge(wildcards):
@@ -196,9 +227,6 @@ def get_mge_input_merge(wildcards):
 def get_mge_input_concat(wildcards):
     return os.path.join(output_dir_concat, f"trimmed_data/{wildcards.sample}/{wildcards.sample}_concat_trimmed.fq")
 
-# Check if reference filtering should be performed
-reference_dir = fasta_cleaner_params.get("reference_dir", None)
-use_reference_filtering = reference_dir and reference_dir not in ["None", "null", "", None]
 
 
 # ===== SNAKEMAKE RULES =====
@@ -206,15 +234,12 @@ use_reference_filtering = reference_dir and reference_dir not in ["None", "null"
 # Rule them all
 rule all:
     input:
+        # ==== GENE FETCH OUTPUT (CONDITIONAL) ====
+        (os.path.join(main_output_dir, "references/sequence_references.csv") if run_gene_fetch else []),
+        
         # ==== MERGE MODE OUTPUTS ====
-        # Log files
         os.path.join(output_dir_merge, "logs/clean_headers.log"),
-        
-        # Consensus files
-        all_mge_cons_merge,
         os.path.join(output_dir_merge, f"consensus/{run_name}_merge.fasta"),
-        
-        # Merge mode filtering intermediates
         os.path.join(output_dir_merge, "logs/mge/alignment_files.log"),
         os.path.join(output_dir_merge, f"{run_name}_merge-stats.csv"),
         os.path.join(output_dir_merge, "logs/cleaning_complete.txt"),
@@ -233,25 +258,15 @@ rule all:
         os.path.join(output_dir_merge, "logs/exonerate_cleanup_complete.txt"),
         
         # ==== CONCAT MODE OUTPUTS ====
-        # Log files
         os.path.join(output_dir_concat, "logs/concat_reads.log"),
         os.path.join(output_dir_concat, "logs/trim_galore.log"),
-		
-        # Gzipped trimmed reads
-        expand(os.path.join(output_dir_concat, "trimmed_data/{sample}/{sample}_R1_trimmed.fastq.gz"), sample=sample_list),
-        expand(os.path.join(output_dir_concat, "trimmed_data/{sample}/{sample}_R2_trimmed.fastq.gz"), sample=sample_list),
-        
-        # Consensus files  
-        all_mge_cons_concat,
+        expand(os.path.join(output_dir_concat, "trimmed_data/{sample}/{sample}_R1_trimmed.fastq.gz"), sample=list(samples.keys())),
+        expand(os.path.join(output_dir_concat, "trimmed_data/{sample}/{sample}_R2_trimmed.fastq.gz"), sample=list(samples.keys())), 
         os.path.join(output_dir_concat, f"consensus/{run_name}_concat.fasta"),
-        
-        ## Post-processing
         os.path.join(output_dir_concat, "logs/mge/alignment_files.log"),
         os.path.join(output_dir_concat, f"{run_name}_concat-stats.csv"),
         os.path.join(output_dir_concat, "logs/cleaning_complete.txt"),
         os.path.join(output_dir_concat, "fasta_cleaner/combined_statistics.csv"),
-
-        # Concat mode filtering intermediates
         os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered/human_filtered.txt"),
         os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered/human_filter_metrics.csv"),
         os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered/at_filtered.txt"),
@@ -274,6 +289,68 @@ rule all:
         os.path.join(output_dir_merge, "logs/fasta_cleaner/fasta_cleaner_complete.txt"),
         os.path.join(output_dir_concat, "logs/fasta_cleaner/fasta_cleaner_complete.txt"),
         os.path.join(output_dir_concat, "logs/file_cleanup_complete.txt"),
+
+
+# ===== GENE FETCH RULE =====
+if run_gene_fetch:
+    rule gene_fetch:
+        input:
+            samples_csv=lambda wildcards: config["gene_fetch"].get("samples_file", config["samples_file"])
+        output:
+            sequence_references=os.path.join(main_output_dir, "references/sequence_references.csv"),
+            protein_files=expand(
+                os.path.join(main_output_dir, "references/protein/{sample}.fasta"),
+                sample=list(samples.keys())
+            )
+        params:
+            email=config["gene_fetch"]["email"],
+            api_key=config["gene_fetch"]["api_key"],
+            gene=config["gene_fetch"]["gene"],
+            input_type=config["gene_fetch"]["input_type"].lower(),
+            genbank=config["gene_fetch"].get("genbank", False),
+            output_dir=os.path.join(main_output_dir, "references"),
+            genbank_flag="--genbank" if config["gene_fetch"].get("genbank", False) else "",
+            input_flag="--in" if config["gene_fetch"]["input_type"].lower() == "taxid" else "--in2"
+        log:
+            os.path.join(main_output_dir, "references/gene_fetch.log")
+        threads: rule_resources["gene_fetch"]["threads"]
+        resources:
+            mem_mb=lambda wildcards, attempt: rule_resources["gene_fetch"]["mem_mb"] * attempt
+        retries: 3
+        shell:
+            """
+            set -euo pipefail
+            
+            echo "Starting gene-fetch: $(date)" > {log}
+            echo "Email: {params.email}" >> {log}
+            echo "Gene: {params.gene}" >> {log}
+            echo "Type: protein" >> {log}
+            echo "Input type: {params.input_type}" >> {log}
+            echo "Genbank: {params.genbank}" >> {log}
+            echo "Input samples: {input.samples_csv}" >> {log}
+            echo "Output directory: {params.output_dir}" >> {log}
+            
+            # Run gene-fetch
+            gene-fetch \\
+                --email {params.email} \\
+                --api-key {params.api_key} \\
+                {params.input_flag} {input.samples_csv} \\
+                --gene {params.gene} \\
+                --type protein \\
+                {params.genbank_flag} \\
+                --out {params.output_dir} \\
+                >> {log} 2>&1
+            
+            echo "Gene-fetch completed: $(date)" >> {log}
+            echo "Output file: {output.sequence_references}" >> {log}
+            
+            # Verify output file was created
+            if [ ! -f "{output.sequence_references}" ]; then
+                echo "ERROR: Expected output file not found: {output.sequence_references}" >> {log}
+                exit 1
+            fi
+            """
+
 
 # ===== MERGE MODE RULES =====
 rule fastp_pe_merge:
@@ -381,7 +458,7 @@ rule clean_headers_merge:
 
 rule aggregate_clean_headers_logs_merge:
     input:
-        sample_logs=expand(os.path.join(output_dir_merge, "logs/clean_headers/{sample}.out"), sample=sample_list)
+        sample_logs=expand(os.path.join(output_dir_merge, "logs/clean_headers/{sample}.out"), sample=list(samples.keys()))
     output:
         combined_log=os.path.join(output_dir_merge, "logs/clean_headers.log") 
     log:
@@ -605,7 +682,7 @@ rule gzip_trimmed:
 
 rule aggregate_concat_logs:
     input:
-        sample_logs=expand(os.path.join(output_dir_concat, "logs/concat/{sample}.out"), sample=sample_list)
+        sample_logs=expand(os.path.join(output_dir_concat, "logs/concat/{sample}.out"), sample=list(samples.keys()))
     output:
         combined_log=os.path.join(output_dir_concat, "logs/concat_reads.log")
     log:
@@ -671,7 +748,7 @@ rule quality_trim:
 
 rule aggregate_trim_galore_logs:
     input:
-        sample_logs=expand(os.path.join(output_dir_concat, "logs/trim_galore/{sample}.out"), sample=sample_list) # Use .out
+        sample_logs=expand(os.path.join(output_dir_concat, "logs/trim_galore/{sample}.out"), sample=list(samples.keys())) # Use .out
     output:
         combined_log=os.path.join(output_dir_concat, "logs/trim_galore.log")
     log:
@@ -708,20 +785,20 @@ def get_mge_input_concat(wildcards):
 rule MitoGeneExtractor_merge:
     input:
         DNA=get_mge_input_merge,
-        AA=lambda wildcards: sequence_references[wildcards.sample]["protein_path"]
+        AA=get_protein_reference
     output:
-        alignment=os.path.join(output_dir_merge, "alignment/{sample}_r_{r}_s_{s}_align_{reference_name}.fas"),
-        consensus=os.path.join(output_dir_merge, "consensus/{sample}_r_{r}_s_{s}_con_{reference_name}.fas")
+        alignment=os.path.join(output_dir_merge, "alignment/{sample}_r_{r}_s_{s}_align_{sample}.fas"),
+        consensus=os.path.join(output_dir_merge, "consensus/{sample}_r_{r}_s_{s}_con_{sample}.fas")
     log:
-        out=os.path.join(output_dir_merge, "out/{sample}_r_{r}_s_{s}_summary_{reference_name}.out"),
-        err=os.path.join(output_dir_merge, "err/{sample}_r_{r}_s_{s}_summary_{reference_name}.err")
+        out=os.path.join(output_dir_merge, "out/{sample}_r_{r}_s_{s}_summary.out"),
+        err=os.path.join(output_dir_merge, "err/{sample}_r_{r}_s_{s}_summary.err")
     params:
         mge_executor=config["mge_path"],
         n=config["n"],
         C=config["C"],
         t=config["t"],
         output_dir=output_dir_merge,
-        vulgar_dir=lambda wildcards: os.path.join(output_dir_merge, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_{wildcards.reference_name}/")
+        vulgar_dir=lambda wildcards: os.path.join(output_dir_merge, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}/")
     threads: rule_resources["MitoGeneExtractor_merge"]["threads"]
     resources:
         mem_mb=lambda wildcards, attempt: rule_resources["MitoGeneExtractor_merge"]["mem_mb"] * attempt,
@@ -814,24 +891,24 @@ rule MitoGeneExtractor_merge:
         fi
         """
 
-
+# MGE rule for concat mode
 rule MitoGeneExtractor_concat:
     input:
         DNA=get_mge_input_concat,
-        AA=lambda wildcards: sequence_references[wildcards.sample]["protein_path"]
+        AA=get_protein_reference
     output:
-        alignment=os.path.join(output_dir_concat, "alignment/{sample}_r_{r}_s_{s}_align_{reference_name}.fas"),
-        consensus=os.path.join(output_dir_concat, "consensus/{sample}_r_{r}_s_{s}_con_{reference_name}.fas")
+        alignment=os.path.join(output_dir_concat, "alignment/{sample}_r_{r}_s_{s}_align_{sample}.fas"),
+        consensus=os.path.join(output_dir_concat, "consensus/{sample}_r_{r}_s_{s}_con_{sample}.fas")
     log:
-        out=os.path.join(output_dir_concat, "out/{sample}_r_{r}_s_{s}_summary_{reference_name}.out"),
-        err=os.path.join(output_dir_concat, "err/{sample}_r_{r}_s_{s}_summary_{reference_name}.err")
+        out=os.path.join(output_dir_concat, "out/{sample}_r_{r}_s_{s}_summary.out"),
+        err=os.path.join(output_dir_concat, "err/{sample}_r_{r}_s_{s}_summary.err")
     params:
         mge_executor=config["mge_path"],
         n=config["n"],
         C=config["C"],
         t=config["t"],		
         output_dir=output_dir_concat,
-        vulgar_dir=lambda wildcards: os.path.join(output_dir_concat, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}_{wildcards.reference_name}/")
+        vulgar_dir=lambda wildcards: os.path.join(output_dir_concat, f"logs/mge/{wildcards.sample}_r_{wildcards.r}_s_{wildcards.s}/")
     threads: rule_resources["MitoGeneExtractor_concat"]["threads"]
     resources:
         mem_mb=lambda wildcards, attempt: rule_resources["MitoGeneExtractor_concat"]["mem_mb"] * attempt,
@@ -923,10 +1000,12 @@ rule MitoGeneExtractor_concat:
 
 
 
+
+
 # Rename headers in consensus files for merge mode
 rule rename_and_combine_cons_merge:
     input:
-        consensus_files=all_mge_cons_merge
+        consensus_files=get_all_mge_consensus_files("merge")
     output:
         complete=os.path.join(output_dir_merge, "logs/rename_complete.txt"),
         concat_cons=os.path.join(output_dir_merge, f"consensus/{run_name}_merge.fasta")
@@ -970,7 +1049,7 @@ rule rename_and_combine_cons_merge:
 # Rename headers in consensus files for concat mode
 rule rename_and_combine_cons_concat:
     input:
-        consensus_files=all_mge_cons_concat
+        consensus_files=get_all_mge_consensus_files("merge")
     output:
         complete=os.path.join(output_dir_concat, "logs/rename_complete.txt"),
         concat_cons=os.path.join(output_dir_concat, f"consensus/{run_name}_concat.fasta")
@@ -1781,8 +1860,11 @@ rule fasta_compare:
     params:
         script=os.path.join(workflow.basedir, "scripts/fasta_compare.py"),
         target_marker=fasta_compare_params["target"],
+        rank=fasta_compare_params.get("rank", 3),
+        relaxed=fasta_compare_params.get("relaxed", False),
         verbosity=" ".join([
-            "--verbose" if fasta_compare_params["verbose"] else ""
+            "--verbose" if fasta_compare_params["verbose"] else "",
+            "--relaxed" if fasta_compare_params.get("relaxed", False) else ""
         ]).strip()
     log:
         os.path.join(main_output_dir, f"fasta_compare/fasta_compare_{run_name}.log")
@@ -1800,6 +1882,7 @@ rule fasta_compare:
             --output-barcode {output.barcode_fasta} \
             --input {input.fasta_concat} {input.fasta_merge} {input.clean_fasta_concat} {input.clean_fasta_merge} \
             --target {params.target_marker} \
+            --rank {params.rank} \
             --log-file {log} \
             {params.verbosity}
         """
@@ -1809,12 +1892,12 @@ rule fasta_compare:
 rule extract_stats_to_csv_merge:
     input:
         alignment_log=os.path.join(output_dir_merge, "logs/mge/alignment_files.log"),
-        out_files=expand(os.path.join(output_dir_merge, "out/{sample}_r_{r}_s_{s}_summary_{reference_name}.out"),
-                         zip, 
-                         sample=[s for s, _ in sample_reference_pairs],
-                         reference_name=[ref for _, ref in sample_reference_pairs],
-                         r=config["r"],
-                         s=config["s"]),
+        out_files=expand(
+            os.path.join(output_dir_merge, "out/{sample}_r_{r}_s_{s}_summary.out"),
+            sample=list(samples.keys()),
+            r=config["r"],
+            s=config["s"]
+        ),
         concat_cons=os.path.join(output_dir_merge, f"consensus/{run_name}_merge.fasta"),
         cleaning_csv=os.path.join(output_dir_merge, "fasta_cleaner/combined_statistics.csv"),
         cleaner_complete=os.path.join(output_dir_merge, "logs/cleaning_complete.txt")
@@ -1843,12 +1926,12 @@ rule extract_stats_to_csv_merge:
 rule extract_stats_to_csv_concat:
     input:
         alignment_log=os.path.join(output_dir_concat, "logs/mge/alignment_files.log"),
-        out_files=expand(os.path.join(output_dir_concat, "out/{sample}_r_{r}_s_{s}_summary_{reference_name}.out"),
-                         zip, 
-                         sample=[s for s, _ in sample_reference_pairs],
-                         reference_name=[ref for _, ref in sample_reference_pairs],
-                         r=config["r"],
-                         s=config["s"]),
+        out_files=expand(
+            os.path.join(output_dir_concat, "out/{sample}_r_{r}_s_{s}_summary.out"),
+            sample=list(samples.keys()),
+            r=config["r"],
+            s=config["s"]
+        ),
         concat_cons=os.path.join(output_dir_concat, f"consensus/{run_name}_concat.fasta"),
         cleaning_csv=os.path.join(output_dir_concat, "fasta_cleaner/combined_statistics.csv"),
         cleaner_complete=os.path.join(output_dir_concat, "logs/cleaning_complete.txt")
