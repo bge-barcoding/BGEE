@@ -84,7 +84,8 @@ git status
 ## Customising snakemake configuration file ##
 - Update `config/config.yaml` with neccessary paths and variables - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for a more detailed explanation of Exonernate run paramters.
 - Rule-specific resources in the [config.yaml](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/config/config.yaml) - Each rule can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
-```# config/config.yaml
+```
+# config/config.yaml
 
 ## General BGEE pipeline parameters and paths
 # BGEE run name identifier
@@ -104,6 +105,7 @@ gene_fetch:
   email: "example@example.ac.uk"      # Required: Email for NCBI API
   api_key: "api_key1234567890"        # Required: NCBI API key
   gene: "cox1"                        # Target gene (e.g., cox1, rbcl, matk)
+  input_type: "taxid"                                     # Does the 'samples.csv' contain a 'taxid' column or 'hierarchical' taxonomic information column per sample (default: taxid)? - see Gene Fetch docs for more detail
   genbank: true                       # Download GenBank records for corresponding pseudo-references
   # output_dir will be set automatically to {output_dir}/references/
 
