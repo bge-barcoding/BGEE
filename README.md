@@ -28,7 +28,9 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
     - Raw read quality control and merging - Adapter, trimming, quality trimming, poly-g trimming, deduplication, and merging of paired-end reads using [fastp](https://github.com/OpenGene/fastp) (fastp_pe_merge).
     - 'Clean' headers of input files, as required by MitoGeneExtractor (clean_headers_merge), and concentation of associated log files (Aggregate_clean_headers_logs).
 
-<img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="400"/>
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="500"/>
+</p>
 
 2. Retrieval of sample-specific pseudo-references from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
 3. Protein reference-guided barcode recovery using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
