@@ -13,8 +13,8 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 # Requirements #
 - [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) version 1.9.6 installed. Clone repository and follow installation instructons. 
 - Paired-end reads in .fastq.gz or .fastq format.
-- samples_file.csv (generated manually, or as outlined [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)) if working from BOLD sample metdata.
-- sequence_references_file.csv (generated manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file)).
+- samples_file.csv (generated manually, or as outlined [below](https://github.com/SchistoDan/BGEE?tab=readme-ov-file#2-generate-samplescsv)) if working from BOLD sample metadata.
+- sequence_references_file.csv (generated manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file) within the workflow).
 - Activated conda env (see bgee_env.yaml).
 
 # Workflow #
@@ -36,11 +36,11 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
    - Remove aligned reads with similarity to human COI (a common contaminant of museum specimens) (uses supplementary [human_cox1_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/human_cox1_filter.py).
    - Remove aligned reads with AT content over and/or below a specified threshold (high AT content can be indicative of contamination (e.g. fungal)) (uses supplementary [at_content_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/at_content_filter.py).
    - Remove reads that are statistical outliers compared to the original consensus (uses supplementary [statistical_outliers.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/statistical_outlier_filter.py).
-   - [optional] Remove reads that are statistical outliers compared to the supplied reference sequence(s) (uses supplementary [reference_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/reference_filter.py).
+   - [optional] Remove reads with similarity to supplied reference sequence(s) (uses supplementary [reference_filter.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/reference_filter.py).
    - Generation of 'cleaned' consensus sequence (uses supplementary [consensus_generator.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/consensus_generator.py).
    - Aggregate metrics from each stage of filtering (uses supplementary [aggregate_filter_metrics.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/aggregate_filter_metrics.py).
    - Remove intermediate files and unecessary logs generated during the consensus cleaning process (remove_fasta_cleaner_files).
-8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria: Rank1 = No ambiguous bases & longest stretch ≥ 650, Rank3 = No ambiguous bases & longest stretch ≥ 500, Rank3 = No ambiguous bases & 300 ≤ longest stretch ≤ 499, Rank4 = No ambiguous bases &1 ≤ longest stretch ≤ 299, Rank5 = Has ambiguous bases. (uses supplementary [fasta_compare](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/fasta_compare.py).
+8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria: Rank1 = No ambiguous bases & longest stretch ≥ 650, Rank3 = No ambiguous bases & longest stretch ≥ 500, Rank3 = No ambiguous bases & 300 ≤ longest stretch ≤ 499, Rank4 = No ambiguous bases &1 ≤ longest stretch ≤ 299, Rank5 = Has ambiguous bases. 'Relaxed' ranking criteria also available (see docstring of supplementary [fasta_compare](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/fasta_compare.py).
 9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/SchistoDan/BGEE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
 10. Remove temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
@@ -56,7 +56,7 @@ conda env create -f /workflow/scripts/bgee_env.yaml
 git status
 ```
 
-## Generate samples.csv ###
+## Generate sample input file ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
 - Must contain ID, forward (read paths), reverse (read paths), and taxid columns (see below for example). Column 1 can be named 'ID', 'process_id', 'Process ID', 'process id', 'Process id', 'PROCESS ID', 'sample', 'SAMPLE', or 'Sample'.
 - Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. It is therefore recommended that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
@@ -70,10 +70,10 @@ git status
 | BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | 3084599 |
 
 ## Gathering sample-specific pseudo-references ##
-- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch). gene-fetch will retrieve the necessary protein pseudo-references for each sample using the samples taxonomic identifier (taxid) or taxonomic lineages for each sample.
+- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow. If enabled (in the config.yaml), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the samples taxonomic identifier (taxid)/taxonomic lineages for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key). 
 - Must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.
 
-**samples.csv example**
+**sample_references.csv example**
 | process_id | reference_name | protein_reference_path | 
 | --- | --- | --- |
 | BSNHM002-24  | BSNHM002-24 | path/to/BSNHM002-24.fasta |
@@ -84,195 +84,176 @@ git status
 - Update config.yaml with neccessary paths and variables.
   - See [MitoGeneExtractor README.md](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/README.md) for explanation of Exonernate ('r' and 's') run paramters.
   - See [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) for information on filtering variables and thresholds (default is likely suitable in most cases).
-  - See [Gene Fetch repository](https://github.com/bge-barcoding/gene_fetch) for guidance on creating [sequence_reference_file.csv](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file#normal-mode).
 - Rule-specific resources in the [config.yaml](https://github.com/SchistoDan/BGEE/blob/main/config/config.yaml) - Each rule can specify the necessary number of threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
-```
-# config/config.yaml
-# MGE run name identifier
-run_name: "RUN_1"
+```# config/config.yaml
 
+## General BGEE pipeline parameters and paths
+# BGEE run name identifier
+run_name: "BGEE_RUN_1"
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
-mge_path: "/path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
-
+mge_path: "path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 # Path to samples.csv
-samples_file: "/path/to/input/samples/file/samples.csv"
-
-# Path to references.csv
-sequence_reference_file: "/path/to/input/reference/sequence/csv/sequence_references.csv"
-
+samples_file: "path/to/samples.csv"
+# Path to references.csv (comment out 'sequence_reference_file' line below or remove path if 'run_gene_fetch' is true)
+sequence_reference_file: ""
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "/path/to/output/directory"
+output_dir: "path/to/BGEE-RUN_1-out"
 
-## MGE running parameters
+## Gene Fetch parameters (https://github.com/bge-barcoding/gene_fetch)
+run_gene_fetch: true  # Set true to use gene-fetch to generate reference sequences
+gene_fetch:
+  email: "example@example.ac.uk"      # Required: Email for NCBI API
+  api_key: "api_key1234567890"        # Required: NCBI API key
+  gene: "cox1"                        # Target gene (e.g., cox1, rbcl, matk)
+  genbank: true                       # Download GenBank records for corresponding pseudo-references
+  # output_dir will be set automatically to {output_dir}/references/
+
+## MGE running parameters (see https://github.com/cmayer/MitoGeneExtractor/tree/main?tab=readme-ov-file#command-line-options)
 # Exonerate relative score threshold parameter
 r:
   - 1
   - 1.3
   - 1.5
-
 # Exonerate minimum score threshold parameter
 s:
   - 50
   - 100
+# Number of bp to extend beyond the Exonerate alignment
+n: 0
+# Genetic code (see https://www.ncbi.nlm.nih.gov/Taxonomy/Utils/wprintgc.cgi)
+C: 5
+# Consensus threshold (e.g. 0.5 = 50%)
+t: 0.5
   
-# 'Cleaning' of recovered barcode sequences
+## Post-processing of aligned reads for cleaning (using five supplementary scripts)
+# human coi filtering -> at content filtering -> statistical outlier filtering -> (optional) reference-base filtering -> 'cleaned' consensus generation
+# Default parameters
 fasta_cleaner:
-  consensus_threshold: 0.5  # 
-  human_threshold: 0.95     # Threshold for human COI similarity (e.g. >95% similarity = read removed)
-  at_difference: 0.1        # Maximum allowed difference in AT content between each read and the consensus before filtering (e.g. if consensus AT content = 0.65, and a read has <0.55 or >0.75 AT content, discard it (if in "absolute" mode)
-  at_mode: "absolute"       # absolute (remove reads if AT content differs from consensus by more than threshold in either direction), higher (remove reads with AT content above consensus + threshold), lower (remove reads with AT content below consensus - threshold)
-  outlier_percentile: 90.0  # Threshold for 'deviant' read removal (e.g. the bottom 90% of sequences (most similar to consensus) are kept)
-  disable_human: false      # If false, 'human_cox1_filter.py' will run
-  disable_at: false         # If false, 'at_content_filter.py' will run
-  disable_outliers: false   # If false, 'statistical_outliers.py' will run
-  reference_dir: null       # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to references
+  consensus_threshold: 0.5      # Threshold at which bases at each position must 'agree' to be incldued in the consensus (0.5 = ≥50% of bases at each position must agree)
+  human_threshold: 0.95         # Threshold at which reads are removed due to similarity with human COI (0.95 = reads with ≥95% similarity are removed)
+  at_difference: 0.1            # Threshold at which reads are removed due to AT content variation (0.1 = reads with AT% differing by >10% from the consensus are removed)
+  at_mode: "absolute"           # At content filtering mode: Absolute (reads removed when AT% differs from consensus in either direction by `at_difference` (e.g. >10%)), Higher (reads removed when AT% is higher than `at_difference` threshold), Lower (reads removed when AT% is lower than `at_difference` threshold).
+  outlier_percentile: 90.0      # Threshold at which reads are flagged as statistical outliers to the consensus and removed (90.0 = reads <90% 'similar' to the consensus are removed)
+  disable_human: false          # If false, 'human_cox1_filter.py' will run
+  disable_at: false             # If false, 'at_content_filter.py' will run
+  disable_outliers: false       # If false, 'statistical_outliers.py' will run
+  reference_dir: null           # To skip reference filtering enter "null"/"None". To enable reference filtering, provide path to a parent directory (flat structure) containing '{sample}_reference.fasta' files.
 
-
-# Comparison of consensus sequences produced directly by MGE and those with additional cleaning (see scripts/fasta_compare.py)
-# Options: cox1/COI/CO1, rbcl/RBCL, matk/MATK
+## Comparison and selection of the 'best' consensus sequence produced by MGE and fasta_cleaner for each sample (using fasta_compare.py)
 run_fasta_compare: true  # Set false to skip fasta_compare step
-
 fasta_compare:
-  target: "cox1"
-  verbose: false
+  target: "cox1"    # Options: cox1, rbcl, matk
+  verbose: false    # Enable verbose logging (default: false)
+  rank: 3           # Barcode rank and below considered a 'pass' (default: 3)
+  relaxed: false    # Use 'relaxed' ranking system (default: false)
 
-# Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
+## Resource allocation for each rule. Memory shown in Mb (mem_mb), e.g. 2048 = 2G memory.
 # Rules have dynamic memory scaling upon retry (mem_mb * retry #).
 rules:
+  gene_fetch:
+    mem_mb: 4096
+    threads: 2
   fastp_pe_merge:
     mem_mb: 8192
     threads: 4
-   
   clean_headers_merge:
     mem_mb: 4096
     threads: 2
-    
   aggregate_clean_headers_logs_merge:
     mem_mb: 2048
     threads: 2
-    
   fastp_pe_concat:
     mem_mb: 8192
-    threads: 4
-    
+    threads: 4  
   fastq_concat:
     mem_mb: 4096
     threads: 4
-    
   gzip_trimmed:
     mem_mb: 4096
-    threads: 4
-    
+    threads: 4 
   aggregate_concat_logs:
     mem_mb: 2048
     threads: 2
-    
   quality_trim:
     mem_mb: 8192
     threads: 4
-    
   aggregate_trim_galore_logs:
     mem_mb: 2048
     threads: 2
-    
   MitoGeneExtractor_merge:
-    mem_mb: 20480
+    mem_mb: 20480           # Rule has dynamic memory scaling upon retry (mem_mb * retry #)
     threads: 6
     partition: medium
-    
   MitoGeneExtractor_concat:
-    mem_mb: 20480
+    mem_mb: 20480           # Rule has dynamic memory scaling upon retry (mem_mb * retry #)
     threads: 6
     partition: medium
-    
   rename_and_combine_cons_merge:
     mem_mb: 2048
     threads: 4
-    
   rename_and_combine_cons_concat:
     mem_mb: 2048
     threads: 4
-    
   create_alignment_log_merge:
     mem_mb: 4096
     threads: 2
-    
   create_alignment_log_concat:
     mem_mb: 4096
     threads: 2
-    
   human_cox1_filter_merge:
     mem_mb: 10240
     threads: 8
-    
   at_content_filter_merge:
     mem_mb: 15360
     threads: 8
-    
   statistical_outlier_filter_merge:
     mem_mb: 8192
     threads: 8
-    
   reference_filter_merge:
-    mem_mb: 4096
-    threads: 4
-    
+    mem_mb: 8192
+    threads: 8
   consensus_generation_merge:
-    mem_mb: 4096
-    threads: 4
-    
+    mem_mb: 8192
+    threads: 8
   aggregate_filter_metrics_merge:
     mem_mb: 2048
     threads: 1
-
   human_cox1_filter_concat:
     mem_mb: 10240
     threads: 8
-  
   at_content_filter_concat:
     mem_mb: 15360
     threads: 8
-    
   statistical_outlier_filter_concat:
     mem_mb: 4096
     threads: 1
-    
   reference_filter_concat:
-    mem_mb: 4096
-    threads: 4
-    
+    mem_mb: 8192
+    threads: 8
   consensus_generation_concat:
-    mem_mb: 4096
-    threads: 4
-    
+    mem_mb: 8192
+    threads: 8
   aggregate_filter_metrics_concat:
     mem_mb: 2048
     threads: 1
-    
   extract_stats_to_csv_merge:
     mem_mb: 4096
     threads: 4
-    
   extract_stats_to_csv_concat:
     mem_mb: 4096
     threads: 4
-    
   combine_stats_files:
     mem_mb: 1024
     threads: 1
-    
   fasta_compare:
     mem_mb: 4096
     threads: 4
-    
   remove_fasta_cleaner_files:
     mem_mb: 4096
     threads: 4
-    
   remove_exonerate_intermediates:
     mem_mb: 4096
     threads: 2
-    
   cleanup_files:
     mem_mb: 1024
     threads: 1
