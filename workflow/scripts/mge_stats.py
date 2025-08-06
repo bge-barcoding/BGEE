@@ -16,8 +16,10 @@ Arguments:
         Name of the output CSV file
     -od, --out_file_dir : str
         Directory containing .out files with additional sequence statistics
-    -c, --cleaning_csv : str
+    -c, --cleaning_csv : str (optional)
         Path to CSV file containing cleaning statistics
+    --ref_seqs : str (optional)
+        Path to CSV file containing reference sequence information (taxid, protein_accession, matched_rank)
 
 Outputs:
     - <output_file>.csv: Main summary file containing all statistics
@@ -25,6 +27,9 @@ Outputs:
 
 The script generates the following metrics for each sample:
     - ID: Identifier extracted from the filename
+    - sample_taxid: Taxonomic ID of the sample from reference sequences
+    - ref_accession: Protein accession number from reference sequences  
+    - ref_rank: Matched taxonomic rank from reference sequences
     - mge_params: Parameters used for MGE (e.g., r_1.3_s_50)
     - n_reads_in: Number of input sequences (from .out file)
     - n_reads_aligned: Number of aligned sequences in the FASTA file
@@ -181,6 +186,30 @@ def parse_cleaning_csv(file_path):
     except Exception as e:
         logger.error(f"Error reading cleaning CSV file {file_path}: {e}")
         return {}
+        
+def parse_ref_seqs_csv(file_path):
+    """Parse the reference sequences CSV file for taxid, accession, and rank information."""
+    ref_data = {}
+    try:
+        with open(file_path, 'r', newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                process_id = row.get('process_id', '').strip()
+                if process_id:
+                    ref_stats = {
+                        'taxid': row.get('taxid', '').strip(),
+                        'protein_accession': row.get('protein_accession', '').strip(),
+                        'matched_rank': row.get('matched_rank', '').strip()
+                    }
+                    ref_data[process_id] = ref_stats
+        
+        logger.info(f"Parsed reference sequence data for {len(ref_data)} samples from CSV")
+        return ref_data
+            
+    except Exception as e:
+        logger.error(f"Error reading reference sequences CSV file {file_path}: {e}")
+        return {}
+
 
 def process_fasta_file(file_path):
     """Process a FASTA file and extract sequence statistics."""
@@ -313,7 +342,7 @@ def process_fasta_file(file_path):
         'cov_med': median_coverage,
     }
 
-def summarise_fasta(log_file, output_file, out_file_dir, cleaning_csv=None):
+def summarise_fasta(log_file, output_file, out_file_dir, cleaning_csv=None, ref_seqs_csv=None):
     """Summarise FASTA files based on log file with cleaning statistics from CSV."""
     try:
         with open(log_file, 'r') as f:
@@ -355,9 +384,17 @@ def summarise_fasta(log_file, output_file, out_file_dir, cleaning_csv=None):
     else:
         logger.warning(f"Cleaning CSV file not provided or does not exist")
 
-    # Define fieldnames with updated column headings
+    # Get reference sequence stats from CSV file
+    ref_data = {}
+    if ref_seqs_csv and os.path.exists(ref_seqs_csv):
+        ref_data = parse_ref_seqs_csv(ref_seqs_csv)
+    else:
+        logger.warning(f"Reference sequences CSV file not provided or does not exist")
+
+    # Define fieldnames with new reference columns between 'ID' and 'mge_params'
     fieldnames = [
-        'Filename', 'ID', 'mge_params', 'n_reads_in', 'n_reads_aligned', 'n_reads_skipped', 'ref_length', 
+        'Filename', 'ID', 'sample_taxid', 'ref_accession', 'ref_rank', 'mge_params', 
+        'n_reads_in', 'n_reads_aligned', 'n_reads_skipped', 'ref_length', 
         'cov_min', 'cov_max', 'cov_avg', 'cov_med',
         'cleaning_input_reads', 'cleaning_kept_reads', 'cleaning_removed_human', 'cleaning_removed_at', 
         'cleaning_removed_outlier', 'cleaning_ambig_bases', 'cleaning_cov_percent', 'cleaning_cov_avg', 
@@ -377,6 +414,10 @@ def summarise_fasta(log_file, output_file, out_file_dir, cleaning_csv=None):
             if result:
                 result['Filename'] = os.path.basename(file_path).replace('.fasta', '').replace('.fas', '').replace('_align_', '_')
                 result['ID'] = base_id
+                ref_stats = ref_data.get(base_id, {})
+                result['sample_taxid'] = ref_stats.get('taxid', '')
+                result['ref_accession'] = ref_stats.get('protein_accession', '')
+                result['ref_rank'] = ref_stats.get('matched_rank', '')
                 result['mge_params'] = params
 
                 # Add alignment stats with updated keys - use full_id for matching
@@ -442,6 +483,7 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--output', required=True, type=str, help='The output CSV file name.')
     parser.add_argument('-od', '--out_file_dir', required=True, type=str, help='The directory containing .out files with additional statistics.')
     parser.add_argument('-c', '--cleaning_csv', type=str, help='Path to CSV file containing cleaning statistics')
+    parser.add_argument('--ref_seqs', type=str, help='Path to CSV file containing reference sequence information (taxid, accession, rank)')
 
     args = parser.parse_args()
 
@@ -451,5 +493,7 @@ if __name__ == "__main__":
         parser.error(f"The directory '{args.out_file_dir}' does not exist or is not a directory.")
     if args.cleaning_csv and not os.path.isfile(args.cleaning_csv):
         parser.error(f"The cleaning CSV file '{args.cleaning_csv}' does not exist.")
+    if args.ref_seqs and not os.path.isfile(args.ref_seqs):
+        parser.error(f"The reference sequences CSV file '{args.ref_seqs}' does not exist.")
 
-    summarise_fasta(args.alignment_log, args.output, args.out_file_dir, args.cleaning_csv)
+    summarise_fasta(args.alignment_log, args.output, args.out_file_dir, args.cleaning_csv, args.ref_seqs)
