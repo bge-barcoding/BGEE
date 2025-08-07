@@ -116,11 +116,9 @@ def parse_sequence_references(sequence_reference_file):
             sample_id = row['process_id']
             reference_name = row['reference_name']
             protein_reference_path = row['protein_reference_path']
-            nucleotide_reference_path = row['nucleotide_reference_path']
             sequence_references[sample_id] = {
                 "reference_name": reference_name, 
                 "protein_path": protein_reference_path,
-                "nucleotide_path": nucleotide_reference_path
             }    
     return sequence_references
 
