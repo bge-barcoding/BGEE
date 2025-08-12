@@ -184,7 +184,7 @@ rules:
     threads: 4
   gzip_trimmed:
     mem_mb: 4096
-    threads: 4 
+    threads: 2 
   aggregate_concat_logs:
     mem_mb: 2048
     threads: 2
@@ -196,18 +196,18 @@ rules:
     threads: 2
   MitoGeneExtractor_merge:
     mem_mb: 20480
-    threads: 6
+    threads: 4
     partition: medium        # Change according to your available partitions
   MitoGeneExtractor_concat:
     mem_mb: 20480
-    threads: 6
+    threads: 4
     partition: medium        # Change according to your available partitions
   rename_and_combine_cons_merge:
     mem_mb: 2048
-    threads: 4
+    threads: 2
   rename_and_combine_cons_concat:
     mem_mb: 2048
-    threads: 4
+    threads: 2
   create_alignment_log_merge:
     mem_mb: 4096
     threads: 2
@@ -216,37 +216,37 @@ rules:
     threads: 2
   human_cox1_filter_merge:
     mem_mb: 10240
-    threads: 8
+    threads: 4
   at_content_filter_merge:
     mem_mb: 15360
     threads: 8
   statistical_outlier_filter_merge:
     mem_mb: 8192
-    threads: 8
+    threads: 4
   reference_filter_merge:
     mem_mb: 8192
-    threads: 8
+    threads: 4
   consensus_generation_merge:
     mem_mb: 8192
-    threads: 8
+    threads: 4
   aggregate_filter_metrics_merge:
     mem_mb: 2048
     threads: 1
   human_cox1_filter_concat:
     mem_mb: 10240
-    threads: 8
+    threads: 4
   at_content_filter_concat:
     mem_mb: 15360
     threads: 8
   statistical_outlier_filter_concat:
     mem_mb: 4096
-    threads: 1
+    threads: 4
   reference_filter_concat:
     mem_mb: 8192
-    threads: 8
+    threads: 4
   consensus_generation_concat:
     mem_mb: 8192
-    threads: 8
+    threads: 4
   aggregate_filter_metrics_concat:
     mem_mb: 2048
     threads: 1
@@ -278,11 +278,13 @@ rules:
 - The profile (`profiles/local` or `profiles/slurm`) will need to be changed depending on your system (see `$PROFILE` variable in `snakemake_run.sh`).
 
 # Cluster submission #
-- [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster.
-- The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run.
-- Submit snakemake_run.sh to the cluster with `./snakemake_run.sh` (if in `BGEE/` directory) - This will submit `snakemake_run.sh` to the head/login node of your cluster:
+- [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster. The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run.
   - If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job.
+1. Set up interactive session on compute node using `srun --partition=[YOUR_PARTITION] --cpus-per-task=2 --mem=4G --time=24:00:00 --pty bash`. Change `[YOUR_PARTITION]' to a suitable partition for your HPC. Remember choose a partition and request enough walltime (with `--time`) for the scheduler to last until all jobs finish, otherwise it will be killed when interactive session ends.
+2. Submit snakemake_run.sh to the compute node running the interactive session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the interactive (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.
   - If using `profiles/local`, all workflow steps will be run as a single job. 
+1. Simply run `./snakemake_run.sh` on your desired cluster compute node.
+
 
 
 # Results structure #
