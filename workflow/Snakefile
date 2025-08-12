@@ -1724,7 +1724,7 @@ else:
             """
 
 
-# Clean up intermediate fasta files from filtering directories
+# Clean up intermediate fasta files from filtering directories (remove intermediate FASTA files)
 rule remove_fasta_cleaner_files:
     input:
         # Wait for filtering to complete
@@ -1898,7 +1898,7 @@ rule extract_stats_to_csv_merge:
             r=config["r"],
             s=config["s"]
         ),
-        pre_fatsa=os.path.join(output_dir_merge, f"consensus/{run_name}_cons_combined-merge.fasta"),
+        pre_fasta=os.path.join(output_dir_merge, f"consensus/{run_name}_cons_combined-merge.fasta"),
         cleaning_csv=os.path.join(output_dir_merge, "fasta_cleaner/combined_statistics.csv"),
         cleaner_complete=os.path.join(output_dir_merge, "logs/cleaning_complete.txt"),
         post_fasta=os.path.join(output_dir_merge, "fasta_cleaner/cleaned_cons_combined.fasta"),
