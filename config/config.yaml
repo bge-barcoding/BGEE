@@ -13,6 +13,7 @@ sequence_reference_file: ""
 output_dir: "path/to/BGEE-RUN_1-out"
 
 ## Gene Fetch parameters (https://github.com/bge-barcoding/gene_fetch)
+# See Gene Fetch repository (https://github.com/bge-barcoding/gene_fetch) or `gene-fetch --help` for more detailed parameter information
 run_gene_fetch: true  # Set true to use gene-fetch to generate reference sequences
 gene_fetch:
    email: "example@example.ac.uk"                          # Required: Email for NCBI API
@@ -22,7 +23,8 @@ gene_fetch:
    genbank: true                                           # Download GenBank records for corresponding pseudo-references
   # output_dir will be set automatically to {output_dir}/references/
 
-## MGE running parameters (see https://github.com/cmayer/MitoGeneExtractor/tree/main?tab=readme-ov-file#command-line-options)
+## MGE running parameters
+# See MitoGeneExtractor repository (https://github.com/cmayer/MitoGeneExtractor/tree/main?tab=readme-ov-file#command-line-options) for more detailed parameter information
 # Exonerate relative score threshold parameter
 r:
   - 1
@@ -39,8 +41,9 @@ C: 5
 # Consensus threshold (e.g. 0.5 = 50%)
 t: 0.5
   
-## Post-processing of aligned reads for cleaning (using five supplementary scripts)
-# human coi filtering -> at content filtering -> statistical outlier filtering -> (optional) reference-base filtering -> 'cleaned' consensus generation
+## Post-processing of aligned reads for cleaning (using six supplementary scripts)
+# 01 human coi filtering -> 02 at content filtering -> 03 statistical outlier filtering -> 04 (optional) reference-base filtering -> 05 'cleaned' consensus generation -> 06 cleaning metrics aggregation
+# See the docstring of each script (in workflow/scripts/) for more detailed parameter information
 # Default parameters
 fasta_cleaner:
   consensus_threshold: 0.5      # Threshold at which bases at each position must 'agree' to be incldued in the consensus (0.5 = ≥50% of bases at each position must agree)
@@ -55,8 +58,8 @@ fasta_cleaner:
   reference_filter_mode: "remove_similar"    # Filter mode: "keep_similar" (remove outliers) or "remove_similar" (remove sequences similar to reference)
   
   
-## Comparison and selection of the 'best' consensus sequence produced by MGE and fasta_cleaner for each sample (using fasta_compare.py)
-run_fasta_compare: true  # Set false to skip fasta_compare step
+## Comparison and selection of the 'best' consensus sequence produced by MGE and fasta_cleaner for each sample (using scripts/fasta_compare.py)
+# See workflow/scripts/fasta_compare.py docstring for more detailed parameter informationrun_fasta_compare: true  # Set false to skip fasta_compare step
 fasta_compare:
   target: "cox1"    # Options: cox1, rbcl, matk
   verbose: false    # Enable verbose logging (default: false)
