@@ -254,7 +254,7 @@ rule all:
         (os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filtered.txt") if use_reference_filtering else []),
         (os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv") if use_reference_filtering else []), 
         os.path.join(output_dir_merge, "fasta_cleaner/cleaned_cons_combined.fasta"),
-        os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv"),
+        os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-merge.csv"),
         os.path.join(output_dir_merge, "logs/exonerate_cleanup_complete.txt"),
         
         # ==== CONCAT MODE OUTPUTS ====
@@ -276,7 +276,7 @@ rule all:
         (os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filtered.txt") if use_reference_filtering else []),
         (os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv") if use_reference_filtering else []),
         os.path.join(output_dir_concat, "fasta_cleaner/cleaned_cons_combined.fasta"),
-        os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv"),
+        os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-concat.csv"),
         os.path.join(output_dir_concat, "logs/exonerate_cleanup_complete.txt"),
 		
         # ==== FASTA COMPARE OUTPUTS (CONDITIONAL) ====
@@ -1202,7 +1202,7 @@ rule human_cox1_filter_merge:
         filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/01_human_filtered/human_filtered.txt"),
         metrics=os.path.join(output_dir_merge, "fasta_cleaner/01_human_filtered/human_filter_metrics.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/human_cox1_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/01_human_cox1_filter.py"),
         output_dir=os.path.join(output_dir_merge, "fasta_cleaner/01_human_filtered"),
         human_threshold=fasta_cleaner_params["human_threshold"]
     log:
@@ -1234,7 +1234,7 @@ rule at_content_filter_merge:
         filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/02_at_filtered/at_filtered.txt"),
         summary_metrics=os.path.join(output_dir_merge, "fasta_cleaner/02_at_filtered/at_filter_summary.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/at_content_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/02_at_content_filter.py"),
         output_dir=os.path.join(output_dir_merge, "fasta_cleaner/02_at_filtered"),
         at_threshold=fasta_cleaner_params["at_difference"],
         at_mode=fasta_cleaner_params["at_mode"],
@@ -1270,7 +1270,7 @@ rule statistical_outlier_filter_merge:
         summary_metrics=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filter_summary_metrics.csv"),
         individual_metrics=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/statistical_outlier_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/03_statistical_outlier_filter.py"),
         output_dir=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered"),
         outlier_percentile=fasta_cleaner_params["outlier_percentile"],
         consensus_threshold=fasta_cleaner_params["consensus_threshold"]
@@ -1299,7 +1299,7 @@ rule statistical_outlier_filter_merge:
         """
 
 if use_reference_filtering:
-    # Version WITH reference filtering
+    # Version WITH reference filtering - MERGE MODE
     rule reference_filter_merge:
         input:
             filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filtered.txt")
@@ -1307,11 +1307,10 @@ if use_reference_filtering:
             filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filtered.txt"),
             metrics=os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/reference_filter.py"),
+            script=os.path.join(workflow.basedir, "scripts/04_reference_filter.py"),
             output_dir=os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered"),
             reference_dir=reference_dir,
-            outlier_percentile=fasta_cleaner_params["outlier_percentile"],
-            consensus_threshold=fasta_cleaner_params["consensus_threshold"]
+            filter_mode=fasta_cleaner_params["reference_filter_mode"],
         log:
             os.path.join(output_dir_merge, "logs/fasta_cleaner/04_reference_filter.log")
         threads: rule_resources["reference_filter_merge"]["threads"]
@@ -1321,17 +1320,16 @@ if use_reference_filtering:
         shell:
             """
             set -euo pipefail
-    
+
             mkdir -p {params.output_dir}
-    
+
             python {params.script} \\
                 --input-files-list {input.filtered_files} \\
                 --output-dir {params.output_dir} \\
                 --filtered-files-list {output.filtered_files} \\
                 --metrics-csv {output.metrics} \\
                 --reference-dir {params.reference_dir} \\
-                --outlier-percentile {params.outlier_percentile} \\
-                --consensus-threshold {params.consensus_threshold} \\
+                --filter-mode {params.filter_mode} \\
                 --threads {threads} \\
                 2>&1 | tee {log}
             """
@@ -1342,12 +1340,12 @@ if use_reference_filtering:
             at_metrics=os.path.join(output_dir_merge, "fasta_cleaner/02_at_filtered/at_filter_summary.csv"),
             outlier_metrics=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv"),
             reference_metrics=os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv"),
-            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-merge.csv")
         output:
             completion_flag=os.path.join(output_dir_merge, "logs/cleaning_complete.txt"),
             combined_statistics=os.path.join(output_dir_merge, "fasta_cleaner/combined_statistics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/aggregate_filter_metrics.py"),
+            script=os.path.join(workflow.basedir, "scripts/06_aggregate_filter_metrics.py"),
             output_dir=os.path.join(output_dir_merge, "fasta_cleaner")
         log:
             os.path.join(output_dir_merge, "logs/fasta_cleaner/06_aggregate_metrics.log")
@@ -1373,6 +1371,37 @@ if use_reference_filtering:
             touch {output.completion_flag}
             """
 
+    rule consensus_generation_merge:
+        input:
+            filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/04_reference_filtered/reference_filtered.txt")
+        output:
+            concat_consensus=os.path.join(output_dir_merge, "fasta_cleaner/cleaned_cons_combined.fasta"),
+            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-merge.csv")
+        params:
+            script=os.path.join(workflow.basedir, "scripts/05_consensus_generator.py"),
+            output_dir=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus"),
+            consensus_threshold=fasta_cleaner_params["consensus_threshold"],
+            preprocessing_mode="merge"
+        log:
+            os.path.join(output_dir_merge, "logs/fasta_cleaner/05_consensus_generation.log")
+        threads: rule_resources["consensus_generation_merge"]["threads"]
+        resources:
+            mem_mb=lambda wildcards, attempt: rule_resources["consensus_generation_merge"]["mem_mb"] * attempt
+        retries: 2
+        shell:
+            """
+            set -euo pipefail
+
+            python {params.script} \\
+                --input-files-list {input.filtered_files} \\
+                --output-dir {params.output_dir} \\
+                --consensus-fasta {output.concat_consensus} \\
+                --consensus-metrics {output.consensus_metrics} \\
+                --consensus-threshold {params.consensus_threshold} \\
+                --preprocessing-mode {params.preprocessing_mode} \\
+                --threads {threads} \\
+                2>&1 | tee {log}
+            """
 else:
     # Version WITHOUT reference filtering
     rule consensus_generation_merge:
@@ -1380,9 +1409,9 @@ else:
             filtered_files=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filtered.txt")
         output:
             concat_consensus=os.path.join(output_dir_merge, "fasta_cleaner/cleaned_cons_combined.fasta"),
-            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-merge.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/consensus_generator.py"),
+            script=os.path.join(workflow.basedir, "scripts/05_consensus_generator.py"),
             output_dir=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus"),
             consensus_threshold=fasta_cleaner_params["consensus_threshold"],
             preprocessing_mode="merge"
@@ -1412,12 +1441,12 @@ else:
             human_metrics=os.path.join(output_dir_merge, "fasta_cleaner/01_human_filtered/human_filter_metrics.csv"),
             at_metrics=os.path.join(output_dir_merge, "fasta_cleaner/02_at_filtered/at_filter_summary.csv"),
             outlier_metrics=os.path.join(output_dir_merge, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv"),
-            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_merge, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-merge.csv")
         output:
             completion_flag=os.path.join(output_dir_merge, "logs/cleaning_complete.txt"),
             combined_statistics=os.path.join(output_dir_merge, "fasta_cleaner/combined_statistics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/aggregate_filter_metrics.py"),
+            script=os.path.join(workflow.basedir, "scripts/06_aggregate_filter_metrics.py"),
             output_dir=os.path.join(output_dir_merge, "fasta_cleaner")
         log:
             os.path.join(output_dir_merge, "logs/fasta_cleaner/06_aggregate_metrics.log")
@@ -1451,7 +1480,7 @@ rule human_cox1_filter_concat:
         filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered/human_filtered.txt"),
         metrics=os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered/human_filter_metrics.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/human_cox1_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/01_human_cox1_filter.py"),
         output_dir=os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered"),
         human_threshold=fasta_cleaner_params["human_threshold"]
     log:
@@ -1483,7 +1512,7 @@ rule at_content_filter_concat:
         filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered/at_filtered.txt"),
         summary_metrics=os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered/at_filter_summary.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/at_content_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/02_at_content_filter.py"),
         output_dir=os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered"),
         at_threshold=fasta_cleaner_params["at_difference"],
         at_mode=fasta_cleaner_params["at_mode"],
@@ -1519,7 +1548,7 @@ rule statistical_outlier_filter_concat:
         summary_metrics=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filter_summary_metrics.csv"),
         individual_metrics=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv")
     params:
-        script=os.path.join(workflow.basedir, "scripts/statistical_outlier_filter.py"),
+        script=os.path.join(workflow.basedir, "scripts/03_statistical_outlier_filter.py"),
         output_dir=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered"),
         outlier_percentile=fasta_cleaner_params["outlier_percentile"],
         consensus_threshold=fasta_cleaner_params["consensus_threshold"]
@@ -1548,7 +1577,7 @@ rule statistical_outlier_filter_concat:
         """
 		
 if use_reference_filtering:
-    # Version WITH reference filtering
+    # Version WITH reference filtering - CONCAT MODE  
     rule reference_filter_concat:
         input:
             filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filtered.txt")
@@ -1556,11 +1585,10 @@ if use_reference_filtering:
             filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filtered.txt"),
             metrics=os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/reference_filter.py"),
+            script=os.path.join(workflow.basedir, "scripts/04_reference_filter.py"),
             output_dir=os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered"),
             reference_dir=reference_dir,
-            outlier_percentile=fasta_cleaner_params["outlier_percentile"],
-            consensus_threshold=fasta_cleaner_params["consensus_threshold"]
+            filter_mode=fasta_cleaner_params["reference_filter_mode"],
         log:
             os.path.join(output_dir_concat, "logs/fasta_cleaner/04_reference_filter.log")
         threads: rule_resources["reference_filter_concat"]["threads"]
@@ -1579,8 +1607,7 @@ if use_reference_filtering:
                 --filtered-files-list {output.filtered_files} \\
                 --metrics-csv {output.metrics} \\
                 --reference-dir {params.reference_dir} \\
-                --outlier-percentile {params.outlier_percentile} \\
-                --consensus-threshold {params.consensus_threshold} \\
+                --filter-mode {params.filter_mode} \\
                 --threads {threads} \\
                 2>&1 | tee {log}
             """
@@ -1590,9 +1617,9 @@ if use_reference_filtering:
             filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filtered.txt")
         output:
             concat_consensus=os.path.join(output_dir_concat, "fasta_cleaner/cleaned_cons_combined.fasta"),
-            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-concat.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/consensus_generator.py"),
+            script=os.path.join(workflow.basedir, "scripts/05_consensus_generator.py"),
             output_dir=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus"),
             consensus_threshold=fasta_cleaner_params["consensus_threshold"],
             preprocessing_mode="concat"
@@ -1623,12 +1650,12 @@ if use_reference_filtering:
             at_metrics=os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered/at_filter_summary.csv"),
             outlier_metrics=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv"),
             reference_metrics=os.path.join(output_dir_concat, "fasta_cleaner/04_reference_filtered/reference_filter_metrics.csv"),
-            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-concat.csv")
         output:
             completion_flag=os.path.join(output_dir_concat, "logs/cleaning_complete.txt"),
             combined_statistics=os.path.join(output_dir_concat, "fasta_cleaner/combined_statistics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/aggregate_filter_metrics.py"),
+            script=os.path.join(workflow.basedir, "scripts/06_aggregate_filter_metrics.py"),
             output_dir=os.path.join(output_dir_concat, "fasta_cleaner")
         log:
             os.path.join(output_dir_concat, "logs/fasta_cleaner/06_aggregate_metrics.log")
@@ -1661,9 +1688,9 @@ else:
             filtered_files=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filtered.txt")
         output:
             concat_consensus=os.path.join(output_dir_concat, "fasta_cleaner/cleaned_cons_combined.fasta"),
-            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-concat.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/consensus_generator.py"),
+            script=os.path.join(workflow.basedir, "scripts/05_consensus_generator.py"),
             output_dir=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus"),
             consensus_threshold=fasta_cleaner_params["consensus_threshold"],
             preprocessing_mode="concat"
@@ -1693,12 +1720,12 @@ else:
             human_metrics=os.path.join(output_dir_concat, "fasta_cleaner/01_human_filtered/human_filter_metrics.csv"),
             at_metrics=os.path.join(output_dir_concat, "fasta_cleaner/02_at_filtered/at_filter_summary.csv"),
             outlier_metrics=os.path.join(output_dir_concat, "fasta_cleaner/03_outlier_filtered/outlier_filter_individual_metrics.csv"),
-            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/consensus_metrics.csv")
+            consensus_metrics=os.path.join(output_dir_concat, "fasta_cleaner/05_cleaned_consensus/cleaned_cons_metrics-concat.csv")
         output:
             completion_flag=os.path.join(output_dir_concat, "logs/cleaning_complete.txt"),
             combined_statistics=os.path.join(output_dir_concat, "fasta_cleaner/combined_statistics.csv")
         params:
-            script=os.path.join(workflow.basedir, "scripts/aggregate_filter_metrics.py"),
+            script=os.path.join(workflow.basedir, "scripts/06_aggregate_filter_metrics.py"),
             output_dir=os.path.join(output_dir_concat, "fasta_cleaner")
         log:
             os.path.join(output_dir_concat, "logs/fasta_cleaner/06_aggregate_metrics.log")
