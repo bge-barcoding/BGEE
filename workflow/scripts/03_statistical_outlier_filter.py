@@ -9,8 +9,8 @@ Removes sequences that are statistical outliers compared to consensus.
     - Unweighted Deviation: Simple count of positions where the sequence differs from consensus. (number of differences) / (total valid positions). Treats all positions equally
     - Weighted Deviation: Considers how conserved each position is in the alignment. (conservation-weighted differences) / (total conservation weight). Differences at highly conserved positions are weighted more heavily
 4. Calculates percentile thresholds for both deviation scores across all sequences. Sequences exceeding either threshold are flagged as outliers. Removes sequences that are statistical outliers in either scoring method.
-
 """
+
 
 import os
 import sys
