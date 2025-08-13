@@ -9,7 +9,7 @@ conda activate bgee_env
 RUN_ID="BGEE_RUN_1"	
 
 # Set Snakemake profile (slurm or local)
-PROFILE=".profiles/slurm/"
+PROFILE="./profiles/slurm/"
 
 
 # Setup logging
