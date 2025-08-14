@@ -397,4 +397,7 @@ output_dir/
   ## To do ##
 - Split Snakefile into .smk files
 - Add pre-MGE rule to subset/downsample very large input files (Based on file size or sequence number?)
+- Increase flexibility of input CSV headers (e.g. ID column in sample.csv and process_id column in sequence_references.csv could be ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc)
+- Update 01_human_cox1_filter.py to not just filter against human coi, but the whole human genome/mitogenome
+- HMM-based extraction of (COI) barcode region - either with gene fetch, after gene fetch, or within fasta_compare
   
