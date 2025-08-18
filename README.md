@@ -286,12 +286,20 @@ rules:
 # Cluster submission #
 - [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster. The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run.  
 
-If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job.
-1. Set up interactive session on compute node using `srun --job-name=snakeflow --partition=[YOUR_PARTITION] --cpus-per-task=2 --mem=4G --time=24:00:00 --pty bash`. Change `[YOUR_PARTITION]` to a suitable partition for your HPC. Remember choose a partition and request enough walltime (with `--time`) for the scheduler to last until all jobs finish, otherwise it will be killed when interactive session ends. If you get disconnected from the interactive session, use `srun --jobid=<JOBID> --pty bash` (using the JOBID of the session) to reconnect (as long as the session is still active).
-2. Submit snakemake_run.sh to the compute node running the interactive session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the interactive (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.
+**If using `profiles/slurm`**, SLURM will orchestrate submission of each step in the workflow as a separate job:
+1. You can run the workflow within an interactive SLURM session using `srun --job-name=[SESSION_NAME] --partition=[YOUR_PARTITION] --cpus-per-task=4 --mem=8G --time=24:00:00 --pty bash` (Change `[YOUR_PARTITION]` to a suitable partition for your HPC. Remember choose a partition and request enough walltime (with `--time`) for the scheduler to last until all jobs finish, otherwise it will be killed when interactive session ends). However, you must remain connected to the `srun` session or it will be killed.
+2. Therefore, the 'safer' way to run the workflow is to set up a screen session and then allocate resources to the session so that Snakemake can orchestrate the workflow (the same resource and time contraints as above with `srun` apply).
+```
+# Set up a screen session
+screen -S [SESSION_NAME]
+# Allocate resources to the session 
+salloc --job-name=[SESSION_NAME] --partition=[YOUR_PARTITION] --cpus-per-task=4 --mem=8G --time=24:00:00
+```
+You can then safely disconnect from the screen session qith `Ctrl + A + D` and the snakemake workflow will continue to run. You can reconnect to the session with `screen -r [SESSION_NAME]` and the workflow will still be running.
+4. Finally, submit snakemake_run.sh to the compute node running the session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.
 
 
-If using `profiles/local`, all workflow steps will be run as a single job. 
+**If using `profiles/local`**, all workflow steps will be run as a single job:
 1. Simply run `./snakemake_run.sh` on your desired cluster compute node.
 
 
