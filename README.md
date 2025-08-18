@@ -288,7 +288,9 @@ rules:
 
 If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job.
 1. Set up interactive session on compute node using `srun --job-name=snakeflow --partition=[YOUR_PARTITION] --cpus-per-task=2 --mem=4G --time=24:00:00 --pty bash`. Change `[YOUR_PARTITION]` to a suitable partition for your HPC. Remember choose a partition and request enough walltime (with `--time`) for the scheduler to last until all jobs finish, otherwise it will be killed when interactive session ends.
-2. Submit snakemake_run.sh to the compute node running the interactive session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the interactive (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.  
+2. Submit snakemake_run.sh to the compute node running the interactive session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the interactive (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.
+* If you get disconnected from the interactive session, use `srun --jobid=<JOBID> --pty bash` (using the JOBID of the session) to reconnect.
+
 
 If using `profiles/local`, all workflow steps will be run as a single job. 
 1. Simply run `./snakemake_run.sh` on your desired cluster compute node.
