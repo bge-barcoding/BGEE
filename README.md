@@ -295,7 +295,7 @@ screen -S [SESSION_NAME]
 # Allocate resources to the session 
 salloc --job-name=[SESSION_NAME] --partition=[YOUR_PARTITION] --cpus-per-task=4 --mem=8G --time=24:00:00
 ```
-_* You can then safely disconnect from the screen session qith `Ctrl + A + D` and the snakemake workflow will continue to run. You can reconnect to the session with `screen -r [SESSION_NAME]` and the workflow will still be running._
+  _* You can then safely disconnect from the screen session qith `Ctrl + A + D` and the snakemake workflow will continue to run. You can reconnect to the session with `screen -r [SESSION_NAME]` and the workflow will still be running._
 3. Finally, submit snakemake_run.sh to the compute node running the session you just set up with `bash snakemake_run.sh` (when in `BGEE/` directory). You might see the warning "You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node." - this should be fine as the (SLURM) session is merely handling workflow job submission. If you do experience problems, try `./snakemake_run.sh` within a screen session on your cluster's head/login node.
 
 
