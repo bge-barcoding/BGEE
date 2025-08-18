@@ -280,7 +280,7 @@ rules:
 ```
 
 # Cluster configuration using Snakemake profiles #
-- See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters.
+- See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters. The `jobs` parameter is likely the most important as it dictates how many workflow jobs can be run concurrently.
 - The profile (`profiles/local` or `profiles/slurm`) will need to be changed depending on your system (see `$PROFILE` variable in `snakemake_run.sh`).
 
 # Cluster submission #
