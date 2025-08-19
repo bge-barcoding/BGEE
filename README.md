@@ -298,11 +298,11 @@ salloc --job-name=[SESSION_NAME] \
        --partition=[YOUR_PARTITION] \
        --cpus-per-task=4 \
        --mem=8G \
-       --time=24:00:00
+       --time=[PARTITION_TIME_LIMIT]
 ```
 - Inside this allocation, you can launch Snakemake normally:
 ```
-bash snakemake_run.sh
+./snakemake_run.sh
 ```
 - To detach from the screen session (disconnect but keep it running): `Ctrl + A + D`
 - To reconnect again: `screen -r [SESSION_NAME]`
