@@ -297,8 +297,7 @@ screen -S [SESSION_NAME]
 salloc --job-name=[SESSION_NAME] \
        --partition=[YOUR_PARTITION] \
        --cpus-per-task=4 \
-       --mem=8G \
-       --time=[PARTITION_TIME_LIMIT]
+       --mem=8G
 ```
 - Inside this allocation, you can launch Snakemake normally:
 ```
