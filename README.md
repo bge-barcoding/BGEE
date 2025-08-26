@@ -177,11 +177,11 @@ rules:
     mem_mb: 8192
     threads: 4
   clean_headers_merge:
-    mem_mb: 4096
-    threads: 2
+    mem_mb: 2048
+    threads: 1
   aggregate_clean_headers_logs_merge:
     mem_mb: 2048
-    threads: 2
+    threads: 1
   fastp_pe_concat:
     mem_mb: 8192
     threads: 4  
@@ -193,7 +193,7 @@ rules:
     threads: 2 
   aggregate_concat_logs:
     mem_mb: 2048
-    threads: 2
+    threads: 1
   quality_trim:
     mem_mb: 8192
     threads: 4
@@ -203,11 +203,11 @@ rules:
   MitoGeneExtractor_merge:
     mem_mb: 20480
     threads: 4
-    partition: medium
+    partition: [partition]
   MitoGeneExtractor_concat:
     mem_mb: 20480
     threads: 4
-    partition: medium
+    partition: [partition]
   rename_and_combine_cons_merge:
     mem_mb: 2048
     threads: 2
@@ -216,10 +216,10 @@ rules:
     threads: 2
   create_alignment_log_merge:
     mem_mb: 4096
-    threads: 2
+    threads: 1
   create_alignment_log_concat:
     mem_mb: 4096
-    threads: 2
+    threads: 1
   human_cox1_filter_merge:
     mem_mb: 10240
     threads: 4
@@ -228,10 +228,10 @@ rules:
     threads: 8
   statistical_outlier_filter_merge:
     mem_mb: 8192
-    threads: 8
+    threads: 2
   reference_filter_merge:
     mem_mb: 8192
-    threads: 4
+    threads: 2
   consensus_generation_merge:
     mem_mb: 8192
     threads: 4
@@ -246,10 +246,10 @@ rules:
     threads: 8
   statistical_outlier_filter_concat:
     mem_mb: 4096
-    threads: 1
+    threads: 2
   reference_filter_concat:
     mem_mb: 8192
-    threads: 4
+    threads: 2
   consensus_generation_concat:
     mem_mb: 8192
     threads: 4
@@ -267,13 +267,13 @@ rules:
     threads: 1
   fasta_compare:
     mem_mb: 4096
-    threads: 4
+    threads: 2
   remove_fasta_cleaner_files:
     mem_mb: 4096
     threads: 4
   remove_exonerate_intermediates:
-    mem_mb: 4096
-    threads: 2
+    mem_mb: 1024
+    threads: 1
   cleanup_files:
     mem_mb: 1024
     threads: 1
@@ -296,7 +296,7 @@ screen -S [SESSION_NAME]
 # Allocate resources for Snakemake to use
 salloc --job-name=[SESSION_NAME] \
        --partition=[YOUR_PARTITION] \
-       --cpus-per-task=4 \
+       --cpus-per-task=16 \
        --mem=8G
 ```
 - Inside this allocation, you can launch Snakemake normally:
