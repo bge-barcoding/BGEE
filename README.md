@@ -63,8 +63,8 @@ git status
 
 ## Generate sample input file ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
-- Must contain `ID`, `forward` (read paths), `reverse` (read paths), and `taxid` **or** `hierarchical taxonomy` columns (see below for examples).
-- Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. It is therefore recommended that sample names do not use '_' characters. E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
+- **Must contain `ID`, `forward` (read paths), `reverse` (read paths), and `taxid` _OR_ `hierarchical taxonomy` columns (see below for examples).**
+- Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. **It is therefore recommended that sample names do not use '_' characters.** E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
 - Taxid's can be found manually by searching the expected species/genus/family of each sample in the [NCBI taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy).
   
 **samples.csv example (taxid)**
@@ -82,9 +82,9 @@ git status
 | BSNHM046-24 | abs/path/to/R1.fq.gz | abs/path/to/R2.fq.gz | Annelida | Polychaeta | Terebellida | Ampharetidae | Samytha | Samytha sexcirrata |
 
 ## Gathering sample-specific pseudo-references ##
-- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow. If enabled (in the config.yaml by setting `run_gene_fetch` to 'true'), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the sample's taxonomic identifier (taxid)/taxonomic hierarchy for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key).
+- This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow (highly recommended). If enabled (in the config.yaml by setting `run_gene_fetch` to 'true'), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the sample's taxonomic identifier (taxid)/taxonomic hierarchy for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key).
 - If hierarchical taxonomic information is provided (see `samples.csv example (hierarchical taxonomy)` above) for each sample instead of a taxid (see `samples.csv example (taxid)` above), `Gene Fetch` will, starting from the lowest given rank (e.g. species), find the closest valid taxid on NCBI for the provided taxonomy before proceeding with pseudo-reference fetching.
-- The `sample_references.csv` must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.
+- **Must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.**
 
 **sample_references.csv example**
 | process_id | reference_name | protein_reference_path | 
@@ -92,6 +92,7 @@ git status
 | BSNHM002-24  | BSNHM002-24 | path/to/BSNHM002-24.fasta |
 | BSNHM038-24 | BSNHM038-24 | path/to/BSNHM038-24.fasta |
 | BSNHM046-24 | BSNHM046-24 | path/toBSNHM046-24.fasta |
+* **Currently, it is crucial that the sample name (process_id), reference sequence FASTA file, and corresponding reference sequence FASTA header are all identical for correct sample-reference file mapping.**
 
 ## Customising snakemake configuration file ##
 - Update [config/config.yaml](https://github.com/bge-barcoding/BGEE/blob/main/config/config.yaml) with neccessary paths and variables.
