@@ -3,7 +3,7 @@
 executor: slurm
 
 default-resources:
-  - slurm_partition=medium
+  - slurm_partition=[PARTITION]
   - runtime=180  # in minutes
   - slurm_extra="--ntasks=1 --signal=USR2@90 --no-requeue"
     # --no-requeue: Prevents the job from being automatically requeued if it fails (clashes with snakemake retry memory scaling)
