@@ -18,7 +18,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 - Activated conda env (see bgee_env.yaml).
 
 # Workflow #
-1. Preprocessing mode (both pre-processing modes are run in parallel):
+1. **Preprocessing mode** (both pre-processing modes are run in parallel):
    - 'concat':
      - Initial raw read quality control - Adapter, trimming, quality trimming, poly-g trimming, and deduplication of paired-end reads using [fastp](https://github.com/OpenGene/fastp) (fastp_pe_concat).
      - Concantenation of trimmed PE reads (fastq_concat) and associated log files (aggregate_concat_logs).
@@ -32,12 +32,12 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
   <img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="650"/>
 </p>
 
-2. Retrieval of sample-specific pseudo-references from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
-3. Protein reference-guided barcode recovery using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
-4. Rename raw consensus sequence headers and concatenation into multi-FASTA (rename_and_combine_cons_concat & rename_and_combine_cons_merge) (uses supplementary [rename_headers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/rename_headers.py).
-5. Remove any remaining exonerate intermediate (Concatenated_exonerate_input_*) files leftover after MGE (remove_exonerate_intermediates).
-6. Create list of MGE (FASTA) alignment files for downstream processing (create_alignment_log).
-7. Filter MGE alignment files to remove low-quality, contaminant, or outlier sequences before repeat consensus sequence generation.
+2. **Sample-specific pseudo-reference retrieval** from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
+3. **Protein reference-guided barcode recovery** using [MitoGeneExtractor](https://github.com/cmayer/MitoGeneExtractor) (MitoGeneExtractor_concat & MitoGeneExtractor_merge).
+4. **'Raw' consensus sequence header manipulation and concatenation** into multi-FASTA (rename_and_combine_cons_concat & rename_and_combine_cons_merge) (uses supplementary [rename_headers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/rename_headers.py).
+5. **Remove exonerate intermediates** if remaining after MGE (remove_exonerate_intermediates).
+6. **Generate list of MGE alignment files** for downstream processing (create_alignment_log).
+7. **Filter MGE alignment files to remove low-quality, contaminant, or outlier sequences before repeat consensus sequence generation.**
    - Remove aligned reads with similarity to human COI (a common contaminant of museum specimens) (uses supplementary [01_human_cox1_filter.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/01_human_cox1_filter.py)).
    - Remove aligned reads with AT content over and/or below a specified threshold (high AT content can be indicative of contamination (e.g. fungal)) (uses supplementary [02_at_content_filter.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/02_at_content_filter.py)).
    - Remove reads that are statistical outliers compared to the original consensus (uses supplementary [03_statistical_outliers.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/03_statistical_outlier_filter.py)).
@@ -50,12 +50,9 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
   <img width="285" height="443" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
 </p>
 
-
-
-
-8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria (either 'normal' or 'relaxed'). (see docstring of supplementary [fasta_compare](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/fasta_compare.py).
-9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
-10. Remove temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
+8. **Evaluate barcode quality** based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria (either 'normal' or 'relaxed'). (see docstring of supplementary [fasta_compare](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/fasta_compare.py).
+9. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
+10. **Clean up** temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
 
