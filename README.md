@@ -127,7 +127,7 @@ gene_fetch:
    gene: "cox1"                                            # Target gene (e.g., cox1, rbcl, matk)
    input_type: "taxid"                                     # Does the 'samples.csv' contain a 'taxid' column or 'hierarchical' taxonomic information column per sample (default: taxid)? - see Gene Fetch docs for more detail
    genbank: true                                           # Download GenBank records for corresponding pseudo-references
-  # output_dir will be set automatically to {output_dir}/references/
+   # The protein pseudo-references will be automatically directed to {output_dir}/references/
 
 ## MGE running parameters
 # See MitoGeneExtractor repository (https://github.com/cmayer/MitoGeneExtractor/tree/main?tab=readme-ov-file#command-line-options) for more detailed parameter information
