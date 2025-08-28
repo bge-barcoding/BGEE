@@ -50,7 +50,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
   <img src="https://github.com/user-attachments/assets/3c289e61-2a6b-436f-aa4c-c09695c097a6" width="400" height="400"/>
 </p>
 
-<img width="1140" height="1370" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
+<img width="570" height="685" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
 
 
 
