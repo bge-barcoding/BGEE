@@ -47,8 +47,11 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
    - Remove intermediate files and unecessary logs generated during the consensus cleaning process (remove_fasta_cleaner_files).
   
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1728533d-fbbf-44ff-a429-ec77f25e0e9d" width="500"/>
+  <img src="https://github.com/user-attachments/assets/3c289e61-2a6b-436f-aa4c-c09695c097a6" width="250" height="250"/>
 </p>
+
+
+
 
 8. Evaluate barcode consensus sequence quality based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria (either 'normal' or 'relaxed'). (see docstring of supplementary [fasta_compare](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/fasta_compare.py).
 9. Compile statistics from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
