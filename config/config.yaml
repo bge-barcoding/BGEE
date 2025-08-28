@@ -59,7 +59,8 @@ fasta_cleaner:
   
   
 ## Comparison and selection of the 'best' consensus sequence produced by MGE and fasta_cleaner for each sample (using scripts/fasta_compare.py)
-# See workflow/scripts/fasta_compare.py docstring for more detailed parameter informationrun_fasta_compare: true  # Set false to skip fasta_compare step
+# See workflow/scripts/fasta_compare.py docstring for more detailed parameter information
+run_fasta_compare: true  # Set false to skip fasta_compare step
 fasta_compare:
   target: "cox1"    # Options: cox1, rbcl, matk
   verbose: false    # Enable verbose logging (default: false)
