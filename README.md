@@ -47,10 +47,9 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
    - Remove intermediate files and unecessary logs generated during the consensus cleaning process (remove_fasta_cleaner_files).
   
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3c289e61-2a6b-436f-aa4c-c09695c097a6" width="400" height="400"/>
+  <img width="285" height="443" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
 </p>
 
-<img width="285" height="443" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
 
 
 
