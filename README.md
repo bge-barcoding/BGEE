@@ -271,7 +271,7 @@ rules:
     threads: 2
   remove_fasta_cleaner_files:
     mem_mb: 4096
-    threads: 4
+    threads: 2
   remove_exonerate_intermediates:
     mem_mb: 1024
     threads: 1
@@ -300,9 +300,9 @@ salloc --job-name=[SESSION_NAME] \
        --cpus-per-task=16 \
        --mem=8G
 ```
-- Inside this allocation, you can launch Snakemake normally:
+- Inside this allocation, you can launch Snakemake within an interactive session with srun:
 ```
-./snakemake_run.sh
+srun ./snakemake_run.sh
 ```
 - To detach from the screen session (disconnect but keep it running): `Ctrl + A + D`
 - To reconnect again: `screen -r [SESSION_NAME]`
