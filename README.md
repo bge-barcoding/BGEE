@@ -29,7 +29,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
      - 'Clean' headers of input files, as required by MitoGeneExtractor (clean_headers_merge), and concentation of associated log files (Aggregate_clean_headers_logs).
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="500"/>
+  <img src="https://github.com/user-attachments/assets/139b8c7c-b0dc-465c-8c95-e3a58ea1ab96" width="650"/>
 </p>
 
 2. Retrieval of sample-specific pseudo-references from GenBank using [Gene-Fetch](https://github.com/bge-barcoding/gene_fetch). (gene_fetch).
@@ -47,7 +47,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
    - Remove intermediate files and unecessary logs generated during the consensus cleaning process (remove_fasta_cleaner_files).
   
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/3c289e61-2a6b-436f-aa4c-c09695c097a6" width="250" height="250"/>
+  <img src="https://github.com/user-attachments/assets/3c289e61-2a6b-436f-aa4c-c09695c097a6" width="400" height="400"/>
 </p>
 
 
