@@ -4,7 +4,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 # Contents # 
  - [Requirements](#Requirements)
  - [Workflow](#Workflow)
- - [Running](#running)
+ - [Installation and set up](#Installation-and-set-up)
  - [Cluster configuration](#Cluster-configuration-using-profiles/slurm/config.yaml)
  - [Cluster submission](#Cluster-submission)
  - [Results structure](#Results-structure)
@@ -50,13 +50,16 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
   <img width="285" height="443" alt="image" src="https://github.com/user-attachments/assets/957d43a7-0c00-40ce-bab8-1827d0e37e1b" />
 </p>
 
-8. **Evaluate barcode quality** based on various metrics (length, ambiguous base content, etc.), and select the 'best' sequences according to specific ranking criteria (either 'normal' or 'relaxed'). (see docstring of supplementary [fasta_compare](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/fasta_compare.py).
-9. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
-10. **Clean up** temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
+8. **Validate and triage barcodes** 
+   - Structural validation
+   - Local BLAST of structurally validated barcodes
+   - Taxonomic validation of BLAST results
+10. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
+11. **Clean up** temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
 
-# Running: #
+# Installation and set up: #
 ## Clone BGEE github repository and set up conda environment ##
 - [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
@@ -413,15 +416,13 @@ output_dir/
 
 # Contributing #
 - Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
-- This snakemake pipeline was produced by Dan Parsons @ NHMUK for BioDiversity Genomics Europe.
-- Since this snakemake pipeline uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
+- This snakemake pipeline was produced by Dan Parsons @ NHMUK for the BioDiversity Genomics Europe (BGE) consortium.
+- Since BGEE uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
 
 
   ## To do ##
-- Split Snakefile into .smk files
-- Add pre-MGE rule to subset/downsample very large input files (Based on file size or sequence number?)
-- Increase flexibility of input CSV headers (e.g. ID column in sample.csv and process_id column in sequence_references.csv could be ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc)
-- Update 01_human_cox1_filter.py to not just filter against human coi, but the whole human genome/mitogenome
-- HMM-based extraction of (COI) barcode region - either with gene fetch, after gene fetch, or within fasta_compare
+- Split Snakefile into modular .smk files.
+- Increase flexibility of input CSV headers (e.g. ID column in sample.csv and process_id column in sequence_references.csv could be ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc).
+- Update 01_human_cox1_filter.py to not just filter against human coi, but the whole human genome/mitogenome.
   
