@@ -286,7 +286,7 @@ output_dir/
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
 
 
-  ## To do ##
+# To do #
 - Split Snakefile into modular .smk files.
 - Increase flexibility of input CSV headers (e.g. ID column in sample.csv and process_id column in sequence_references.csv could be ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc).
 - Update 01_human_cox1_filter.py to not just filter against human coi, but the whole human genome/mitogenome.
