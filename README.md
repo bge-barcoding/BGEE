@@ -5,7 +5,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Requirements](#Requirements)
  - [Workflow](#Workflow)
  - [Installation and set up](#Installation-and-set-up)
- - [Cluster configuration](#Cluster-configuration-using-profiles/slurm/config.yaml)
+ - [Cluster configuration](#Cluster-configuration-using-Snakemake-profiles)
  - [Cluster submission](#Cluster-submission)
  - [Results structure](#Results-structure)
  - [Contributing](#Contributing)
