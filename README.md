@@ -144,92 +144,138 @@ srun ./snakemake_run.sh
 # Results structure #
 ```
 output_dir/
-├── references/
-│   ├── protein/                                               # Contains FASTA pseudo-references for each sample.
-│   ├── genbank/                                               # Contains GenBank records corresponding to fetched pseudo-references (if 'genbank: true' set in config.yaml).
-│   └── sequence_references.csv                                # Metadata on fetched pseudo-references.
+├── 01_preprocessing/
+│   ├── merge_mode/
+│   │   ├── trimmed_data/
+│   │   │   ├── {sample}_merged.fq                             # Merged paired-end reads
+│   │   │   ├── {sample}_merged_clean.fq                       # Header-cleaned merged reads
+│   │   │   ├── {sample}_fastp_report.html                     # FastP HTML report
+│   │   │   ├── {sample}_fastp_report.json                     # FastP JSON report
+│   │   │   └── unpaired/                                      # Unpaired reads from merging
+│   │   └── logs/
+│   │       ├── clean_headers/
+│   │       │   └── clean_headers.log                          # Aggregated header cleaning logs
+│   │       ├── fastp/                                         # Individual FastP logs per sample
+│   │       └── final_cleanup_complete.txt
+│   └── concat_mode/
+│       ├── trimmed_data/
+│       │   └── {sample}/
+│       │       ├── {sample}_R1_trimmed.fastq.gz               # Trimmed forward reads
+│       │       ├── {sample}_R2_trimmed.fastq.gz               # Trimmed reverse reads
+│       │       ├── {sample}_concat_trimmed.fq                 # Quality-trimmed concatenated reads
+│       │       ├── {sample}_fastp_report.html                 # FastP HTML report
+│       │       ├── {sample}_fastp_report.json                 # FastP JSON report
+│       │       └── {sample}_concat.fastq_trimming_report.txt  # Trim Galore report
+│       └── logs/
+│           ├── concat/
+│           │   └── concat_reads.log                           # Aggregated concatenation logs
+│           ├── trim_galore/
+│           │   └── trim_galore.log                            # Aggregated Trim Galore logs
+│           ├── fastp/                                         # Individual FastP logs per sample
+│           ├── gzip/                                          # Compression logs per sample
+│           └── final_cleanup_complete.txt
 │
-├── merge_mode/
-│   ├── consensus/
-│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas      # Individual consensus files for each sample/parameter combination. 
-│   │   └── {run_name}_merge.fasta                             # Combined consensus sequences multi-FASTA for merge mode. sequences will have the fasta header '{sample}_r_{r}_s_{s}_con_{reference_name}_merge' after renaming.
-│   ├── alignment/                                             # Alignment files containing trimmed reads aligned by MGE/exonerate (i.e reads that went into generating the consensus sequence).
-│   ├── trimmed_data/                                          # Intermediate. Removed at end of run.
-│   ├── fasta_cleaner/                                         # Consensus 'cleaning' intermediates and outputs. Each 01-05 directory contains metrics related to each cleaning step.
-│   │   ├── 01_human_filtered/
-│   │   ├── 02_at_filtered/
-│   │   ├── 03_outlier_filtered/
-│   │   ├── [optional] 04_reference_filtered/
-│   │   ├── 05_cleaned_consensus/
-│   │   ├── combined_statistics.csv                            # Combined statistics from all cleaning steps.
-│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences multi-FASTA.
-│   ├── logs/
-│   │   ├── clean_headers.log                                  # Aggregated logs for fasta header cleaning for all samples.
-│   │   ├── cleaning_complete.txt
-│   │   ├── file_cleanup_complete.txt
-│   │   ├── rename_fasta.log
-│   │   ├── fasta_cleaner/                                     # Contains logs for each consensus sequence cleaning step.
-│   │   ├── fastp/                                             # Contains fastp trimming logs for each sample.
-│   │   ├── mge/
-│   │   │   └── {sample}_r_{r}_s_{s}_{reference_name}/         # MGE vulgar files for each sample
-│   │   │   └── alignment_files.log
-│   │   │   └── mge_stats.log
-│   ├── out/                                                   # MGE output files for each sample.
-│   ├── err/                                                   # MGE error/processing logs for each sample.
-│   ├── {run_name}_merge-stats.csv                             # Summary statistics file for merge mode. 
-│   └── cleanup_complete.txt
+├── 02_references/                                             # Only if run_gene_fetch = true
+│   ├── protein/
+│   │   └── {sample}.fasta                                     # Protein references for each sample
+│   ├── genbank/                                               # GenBank records (if genbank: true)
+│   └── sequence_references.csv                                # Reference metadata
 │
-├── concat_mode/
-│   ├── consensus/
-│   │   ├── {sample}_r_{r}_s_{s}_con_{reference_name}.fas       # Individual consensus files for each sample/parameter combination.
-│   │   └── {run_name}_concat.fasta                            # Combined consensus sequences multi-FASTA for merge mode. sequences will have the fasta header '{sample}_r_{r}_s_{s}_con_{reference_name}' after renaming.
-│   ├── alignment/                                             # Alignment files containing trimmed reads aligned by MGE/exonerate (i.e reads that went into generating the consensus sequence).
-│   ├── trimmed_data/
-│   │   ├── {sample}/                                          # Trimmed fwd and rev reads (fq.gz), fastp JSON and HTML reports, and Trim Galore QC report.
-│   ├── fasta_cleaner/                                         # Consensus 'cleaning' intermediates and outputs. Each 01-05 directory contains metrics related to each cleaning step.
-│   │   ├── 01_human_filtered/
-│   │   ├── 02_at_filtered/
-│   │   ├── 03_outlier_filtered/
-│   │   ├── [optional] 04_reference_filtered/
-│   │   ├── 05_cleaned_consensus/
-│   │   ├── combined_statistics.csv                            # Combined statistics from all cleaning steps.
-│   │   └── all_consensus_sequences.fasta                      # Cleaned consensus sequences multi-FASTA.
-│   ├── logs/
-│   │   ├── alignment_files.log
-│   │   ├── concat/
-│   │   │   └── {sample}.log
-│   │   ├── concat_reads.log
-│   │   ├── cleaning_complete.txt
-│   │   ├── fasta_cleaner.log
-│   │   ├── mge/
-│   │   │   └── {sample}_vulgar_r_{r}_s_{s}_{reference_name}.txt
-│   │   ├── rename_complete.txt
-│   │   ├── trim_galore/
-│   │   │   └── {sample}.log
-│   ├── logs/
-│   │   ├── concat_reads.log                                   # Aggregated logs for trimmed PE read concatentation.
-│   │   ├── cleaning_complete.txt
-│   │   ├── file_cleanup_complete.txt
-│   │   ├── rename_fasta.log
-│   │   ├── fasta_cleaner/                                     # Contains logs for each consensus sequence cleaning step.
-│   │   ├── fastp/                                             # Contains fastp trimming logs for each sample.
-│   │   ├── gzip/                                              # Logs for each trimmed read compression.
-│   │   ├── mge/
-│   │   │   └── {sample}_r_{r}_s_{s}_{reference_name}/         # MGE vulgar files for each sample
-│   │   │   └── alignment_files.log
-│   │   │   └── mge_stats.log
-│   │   └── trim_galore.log
-│   ├── out/                                                   # MGE output files for each sample.
-│   ├── err/                                                   # MGE error/processing logs for each sample.
-│   ├── {run_name}_concat-stats.csv                             # Summary statistics file for concat mode. 
-│   └── cleanup_complete.txt
+├── 03_barcode_recovery/
+│   ├── merge_mode/
+│   │   ├── alignment/
+│   │   │   └── {sample}_r_{r}_s_{s}_align_{sample}.fas        # MGE alignment files
+│   │   ├── consensus/
+│   │   │   ├── {sample}_r_{r}_s_{s}_con_{sample}.fas          # Individual consensus files
+│   │   │   └── {run_name}_cons_combined-merge.fasta           # Combined consensus sequences
+│   │   ├── fasta_cleaner/
+│   │   │   ├── 01_human_filtered/
+│   │   │   │   ├── human_filtered.txt                         # List of filtered files
+│   │   │   │   └── human_filter_metrics.csv                   # Human filtering metrics
+│   │   │   ├── 02_at_filtered/
+│   │   │   │   ├── at_filtered_sequences/                     # Individual filtered files
+│   │   │   │   ├── at_filtered.txt                            # List of filtered files
+│   │   │   │   └── at_filter_summary.csv                      # AT filtering summary
+│   │   │   ├── 03_outlier_filtered/
+│   │   │   │   ├── outlier_filtered.txt                       # List of filtered files
+│   │   │   │   ├── outlier_filter_summary_metrics.csv         # Summary metrics
+│   │   │   │   └── outlier_filter_individual_metrics.csv      # Individual metrics
+│   │   │   ├── 04_reference_filtered/                         # Optional - if reference filtering enabled
+│   │   │   │   ├── reference_filtered.txt                     # List of filtered files
+│   │   │   │   └── reference_filter_metrics.csv               # Reference filtering metrics
+│   │   │   ├── 05_cleaned_consensus/
+│   │   │   │   └── cleaned_cons_metrics-merge.csv             # Consensus generation metrics
+│   │   │   ├── combined_statistics.csv                        # Aggregated cleaning statistics
+│   │   │   └── cleaned_cons_combined.fasta                    # Final cleaned consensus sequences
+│   │   ├── logs/
+│   │   │   ├── mge/
+│   │   │   │   ├── alignment_files.log                        # List of alignment files
+│   │   │   │   ├── mge_stats.log                              # MGE statistics log
+│   │   │   │   └── {sample}_r_{r}_s_{s}/                      # MGE vulgar files per sample
+│   │   │   ├── fasta_cleaner/
+│   │   │   │   └── fasta_cleaner_complete.txt                 # Cleaner completion flag
+│   │   │   ├── rename_consensus/
+│   │   │   │   └── rename_fasta.log                           # Header renaming logs
+│   │   │   ├── fasta_cleaner_complete.txt                     # Main cleaner completion
+│   │   │   └── exonerate_int_cleanup_complete.txt             # Intermediate cleanup completion
+│   │   ├── out/                                               # MGE output files per sample/parameter
+│   │   ├── err/                                               # MGE error logs per sample/parameter
+│   │   └── {run_name}_merge-stats.csv                         # Mode-specific statistics
+│   └── concat_mode/
+│       ├── alignment/
+│       │   └── {sample}_r_{r}_s_{s}_align_{sample}.fas        # MGE alignment files
+│       ├── consensus/
+│       │   ├── {sample}_r_{r}_s_{s}_con_{sample}.fas          # Individual consensus files
+│       │   └── {run_name}_cons_combined-concat.fasta          # Combined consensus sequences
+│       ├── fasta_cleaner/
+│       │   ├── 01_human_filtered/
+│       │   │   ├── human_filtered.txt                         # List of filtered files
+│       │   │   └── human_filter_metrics.csv                   # Human filtering metrics
+│       │   ├── 02_at_filtered/
+│       │   │   ├── at_filtered_sequences/                     # Individual filtered files
+│       │   │   ├── at_filtered.txt                            # List of filtered files
+│       │   │   └── at_filter_summary.csv                      # AT filtering summary
+│       │   ├── 03_outlier_filtered/
+│       │   │   ├── outlier_filtered.txt                       # List of filtered files
+│       │   │   ├── outlier_filter_summary_metrics.csv         # Summary metrics
+│       │   │   └── outlier_filter_individual_metrics.csv      # Individual metrics
+│       │   ├── 04_reference_filtered/                         # Optional - if reference filtering enabled
+│       │   │   ├── reference_filtered.txt                     # List of filtered files
+│       │   │   └── reference_filter_metrics.csv               # Reference filtering metrics
+│       │   ├── 05_cleaned_consensus/
+│       │   │   └── cleaned_cons_metrics-concat.csv            # Consensus generation metrics
+│       │   ├── combined_statistics.csv                        # Aggregated cleaning statistics
+│       │   └── cleaned_cons_combined.fasta                    # Final cleaned consensus sequences
+│       ├── logs/
+│       │   ├── mge/
+│       │   │   ├── alignment_files.log                        # List of alignment files
+│       │   │   ├── mge_stats.log                              # MGE statistics log
+│       │   │   └── {sample}_r_{r}_s_{s}/                      # MGE vulgar files per sample
+│       │   ├── fasta_cleaner/
+│       │   │   └── fasta_cleaner_complete.txt                 # Cleaner completion flag
+│       │   ├── rename_consensus/
+│       │   │   └── rename_fasta.log                           # Header renaming logs
+│       │   ├── fasta_cleaner_complete.txt                     # Main cleaner completion
+│       │   └── exonerate_int_cleanup_complete.txt             # Intermediate cleanup completion
+│       ├── out/                                               # MGE output files per sample/parameter
+│       ├── err/                                               # MGE error logs per sample/parameter
+│       └── {run_name}_concat-stats.csv                        # Mode-specific statistics
+│   ├── {run_name}_bgee_stats.csv                              # Combined statistics from both modes
+│   └── {run_name}_all_cons_combined.fasta                     # All consensus sequences from both modes
 │
-├── fasta_compare/
-│   ├── {run_name}_fasta_compare.csv                          # Comparison results between modes
-│   ├── {run_name}_full_sequences.fasta                       # Full consensus sequences from both modes
-│   ├── {run_name}_barcode_sequences.fasta                    # Barcode sequences from both modes
-│   └── fasta_compare_{run_name}.log
-└── {run_name}_combined_stats.csv                             # Combined statistics from both modes
+├── 04_barcode_validation/
+│   ├── structural/                                            # Only if run_structural_validation = true
+│   │   ├── structural_validation.csv                          # Structural validation results
+│   │   ├── {run_name}_full_sequences.fasta                    # Full sequences passing validation
+│   │   └── {run_name}_barcode_sequences.fasta                 # Barcode sequences passing validation
+│   └── taxonomic/                                             # Only if run_taxonomic_validation = true (& run_structural_validation = true)
+│       ├── 01_local_blast_output.csv                          # BLAST results
+│       ├── 02_taxonomic_validation.csv                        # Taxonomic validation results
+│       └── {run_name}_barcode_sequences.fasta                 # Final validated barcode sequences
+│
+├── {run_name}_final_validated_barcodes.fasta                  # Only if both validations run
+├── {run_name}_final_stats.csv                                 # Only if both validations run
+└── logs/                                                      # Top-level logs directory
 ```
 
 
