@@ -107,15 +107,15 @@ git status
 - **Currently, BGEE's structural_validation only works for COI-5P and rbcL barcodes due to HMM availability (to be updated). BGEE's taxonomic_validation currently only works for COI-5P due to sole use of the BOLDistilled BLAST DB (to be updated).**
 - Each rule in the config.yaml can specify the number of requested threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
 
-# Cluster configuration using Snakemake profiles #
+## Cluster configuration using Snakemake profiles ##
 - See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters. The `jobs` parameter is likely the most important as it dictates how many workflow jobs can be run concurrently.
 - The profile (`profiles/local` or `profiles/slurm`) will need to be changed depending on your system (see `$PROFILE` variable in `snakemake_run.sh`).
 
-# Cluster submission #
+## Cluster submission ##
 - [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster. The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run. 
 
 
-### If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job:
+### If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job: ####
 - The safer way is to launch Snakemake inside a persistent screen session. This ensures the workflow keeps running even if you disconnect.
 ```
 # Start a persistent screen session
@@ -136,7 +136,7 @@ srun ./snakemake_run.sh
 - You may see a warning such as "You are running snakemake in a SLURM job context. This is not recommended..." - This can generally be ignored because the salloc session is only acting as a submission manager. If you do encounter problems, try running `./snakemake_run.sh` within the screen session without running `salloc`.
 
 
-### If using `profiles/local`, all workflow steps will be run as a single job:
+#### If using `profiles/local`, all workflow steps will be run as a single job: ####
 -  Simply run `./snakemake_run.sh` on your desired cluster compute node. This node will handle all job scheduling and job computation.
 
 
