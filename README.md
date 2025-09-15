@@ -111,11 +111,11 @@ git status
 - See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters. The `jobs` parameter is likely the most important as it dictates how many workflow jobs can be run concurrently.
 - The profile (`profiles/local` or `profiles/slurm`) will need to be changed depending on your system (see `$PROFILE` variable in `snakemake_run.sh`).
 
-## Cluster submission ##
+### Cluster submission ###
 - [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster. The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run. 
 
 
-### If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job: ####
+#### If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job: ####
 - The safer way is to launch Snakemake inside a persistent screen session. This ensures the workflow keeps running even if you disconnect.
 ```
 # Start a persistent screen session
