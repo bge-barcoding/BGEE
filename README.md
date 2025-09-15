@@ -6,7 +6,6 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
  - [Workflow](#Workflow)
  - [Installation and set up](#Installation-and-set-up)
  - [Cluster configuration](#Cluster-configuration-using-Snakemake-profiles)
- - [Cluster submission](#Cluster-submission)
  - [Results structure](#Results-structure)
  - [Contributing](#Contributing)
 
@@ -51,10 +50,11 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 </p>
 
 8. **Validate and triage barcodes** 
-   - Structural validation
-   - Local BLAST of structurally validated barcodes
-   - Taxonomic validation of BLAST results
-10. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
+   - Structural validation - Processes all barcode consensus sequences produced by MGE (and fasta_cleaner), combining structural analysis (barcode region HMM-alignment, gaps, ambiguous bases, sequence length) with functional analysis (reading frame determination, stop codon counting, protein translation) to ensure the 'best' consensus sequence is selected for each barcode.
+   - Local BLASTn search - of structurally validated barcode sequences (currently uses BOLDistilled for rapid BLASTn searches, and thus is only suitable for COI).
+   - Taxonomic validation of BLAST results - through parsing output local BLASTn results, and comparison of top BLAST hit taxonomy (observed taxonomy) with input (expected) taxonomy.
+9. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
+10. **Final mergin of metrics** generated during Fastp, TrimGalore, Gene Fetch, MGE, Fasta_cleaner, structural validation and taxononmic validation steps (uses supplementary [val_csv_merger.py](https://github.com/bge-barcoding/BGEE/blob/main/workflow/scripts/val_csv_merger.py).
 11. **Clean up** temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
