@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BLAST Parallel Processing Script
+Local BLASTn (parallelised)
 
 This script provides parallel processing capabilities for running BLASTn searches on FASTA files.
 It can handle single sequences, multi-FASTA files, or entire directories of FASTA files, and
@@ -37,19 +37,19 @@ Requirements:
 
 Usage Examples:
     # Use existing database directory (auto-detect)
-    python blast_parallel.py -i sequences.fasta -d /path/to/databases/ -o results/
+    python tv_local_blast.py -i sequences.fasta -d /path/to/databases/ -o results/
     
     # Use specific existing database
-    python blast_parallel.py -i sequences.fasta -d /path/to/databases/nt -o results/
+    python tv_local_blast.py -i sequences.fasta -d /path/to/databases/nt -o results/
     
     # Create database from FASTA file
-    python blast_parallel.py -i queries.fasta -d reference_genome.fasta -o results/
+    python tv_local_blast.py -i queries.fasta -d reference_genome.fasta -o results/
     
     # Process directory with custom settings and CSV summary
-    python blast_parallel.py -i /fasta_dir/ -d database.fasta -o results/ -p 16 --output-csv summary.csv
+    python tv_local_blast.py -i /fasta_dir/ -d database.fasta -o results/ -p 16 --output-csv summary.csv
     
     # Custom BLAST parameters
-    python blast_parallel.py -i input.fasta -d db.fasta -o out/ --blast-opts "-evalue 1e-10 -max_target_seqs 5"
+    python tv_local_blast.py -i input.fasta -d db.fasta -o out/ --blast-opts "-evalue 1e-10 -max_target_seqs 5"
 
 Author: D. Parsons @NHMUK
 License: N/A
