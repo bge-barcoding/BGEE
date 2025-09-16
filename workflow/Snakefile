@@ -201,7 +201,7 @@ mge_path = config["mge_path"]
 # Gene fetch configuration
 run_gene_fetch = config.get("run_gene_fetch", False)
 if run_gene_fetch:
-    sequence_reference_file_path = os.path.join(config["output_dir"], "references", "sequence_references.csv")
+    sequence_reference_file_path = os.path.join(config["output_dir"], "02_references", "sequence_references.csv")
 else:
     sequence_reference_file_path = config["sequence_reference_file"]
 
@@ -287,7 +287,7 @@ def get_hmm_file_for_target(target):
 def get_protein_reference(wildcards):
     """Get protein reference path for a sample"""
     if run_gene_fetch:
-        return os.path.join(main_output_dir, f"references/protein/{wildcards.sample}.fasta")
+        return os.path.join(main_output_dir, f"02_references/protein/{wildcards.sample}.fasta")
     else:
         sequence_refs = parse_sequence_references(config["sequence_reference_file"])
         return sequence_refs[wildcards.sample]["protein_path"]
@@ -323,7 +323,7 @@ use_reference_filtering = reference_dir and reference_dir not in ["None", "null"
 rule all:
     input:
         # ==== GENE FETCH (CONDITIONAL) ====
-        (os.path.join(main_output_dir, "references/sequence_references.csv") if run_gene_fetch else []),
+        (os.path.join(main_output_dir, "02_references/sequence_references.csv") if run_gene_fetch else []),
         
         # ==== PREPROCESSING OUTPUTS ====
         # Merge mode preprocessing
@@ -398,9 +398,9 @@ if run_gene_fetch:
         input:
             samples_csv=lambda wildcards: config["gene_fetch"].get("samples_file", config["samples_file"])
         output:
-            sequence_references=os.path.join(main_output_dir, "references/sequence_references.csv"),
+            sequence_references=os.path.join(main_output_dir, "02_references/sequence_references.csv"),
             protein_files=expand(
-                os.path.join(main_output_dir, "references/protein/{sample}.fasta"),
+                os.path.join(main_output_dir, "02_references/protein/{sample}.fasta"),
                 sample=list(samples.keys())
             )
         params:
@@ -409,12 +409,12 @@ if run_gene_fetch:
             gene=config["gene_fetch"]["gene"],
             input_type=config["gene_fetch"]["input_type"].lower(),
             genbank=config["gene_fetch"].get("genbank", False),
-            output_dir=os.path.join(main_output_dir, "references"),
+            output_dir=os.path.join(main_output_dir, "02_references"),
             min_length=config["gene_fetch"].get("minimum_length", False),
             genbank_flag="--genbank" if config["gene_fetch"].get("genbank", False) else "",
             input_flag="--in" if config["gene_fetch"]["input_type"].lower() == "taxid" else "--in2"
         log:
-            os.path.join(main_output_dir, "references/gene_fetch.log")
+            os.path.join(main_output_dir, "02_references/gene_fetch.log")
         threads: rule_resources["gene_fetch"]["threads"]
         resources:
             mem_mb=lambda wildcards, attempt: rule_resources["gene_fetch"]["mem_mb"] * attempt
