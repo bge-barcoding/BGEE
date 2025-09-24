@@ -1,12 +1,12 @@
 #!/bin/bash
 
 ## Conda environment
-conda activate bgee_env
+conda activate BeeGees_env
  
 # Setup logging
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 VERSION="v1.0.0"
-RUN_ID="BGEE Snakemake workflow"				
+RUN_ID="BeeGees Snakemake workflow"				
 LOG_FILE="snakemake_${TIMESTAMP}.log"
 
 # Function for timestamped logging
