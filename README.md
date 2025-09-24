@@ -1,4 +1,4 @@
-# Barcode Gene Extractor & Evaluator (BGEE) Snakemake workflow #
+# Barcode gene Extraction and Evaluation from Genome Skims (BeeGees) Snakemake workflow #
 Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens.
 
 # Contents # 
@@ -14,7 +14,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 - Paired-end reads in .fastq.gz or .fastq format.
 - samples_file.csv (generated manually, or as outlined below if working from BOLD sample metadata).
 - sequence_references_file.csv (generated manually, or using [Gene Fetch](https://github.com/bge-barcoding/gene_fetch?tab=readme-ov-file) within the workflow).
-- Activated conda env (see bgee_env.yaml).
+- Activated conda env (see BeeGees_env.yaml).
 
 # Workflow #
 1. **Preprocessing mode** (both pre-processing modes are run in parallel):
@@ -50,22 +50,22 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 </p>
 
 8. **Validate and triage barcodes** 
-   - Structural validation - Processes all barcode consensus sequences produced by MGE (and fasta_cleaner), combining structural analysis (barcode region HMM-alignment, gaps, ambiguous bases, sequence length) with functional analysis (reading frame determination, stop codon counting, protein translation) to ensure the 'best' consensus sequence is selected for each barcode (uses [supplementary structural_validation.py](https://github.com/bge-barcoding/BGEE/blob/main/workflow/scripts/structural_validation.py))
-   - Local BLASTn search - of structurally validated barcode sequences (currently uses BOLDistilled for rapid BLASTn searches, and thus is only suitable for COI) (uses supplementary [tv_local_blast.py](https://github.com/bge-barcoding/BGEE/blob/main/workflow/scripts/tv_local_blast.py)).
-   - Taxonomic validation of BLAST results - through parsing output local BLASTn results, and comparison of top BLAST hit taxonomy (observed taxonomy) with input (expected) taxonomy (uses supplementary [tv_blast2taxonomy.py](https://github.com/bge-barcoding/BGEE/blob/main/workflow/scripts/tv_blast2taxonomy.py)).
+   - Structural validation - Processes all barcode consensus sequences produced by MGE (and fasta_cleaner), combining structural analysis (barcode region HMM-alignment, gaps, ambiguous bases, sequence length) with functional analysis (reading frame determination, stop codon counting, protein translation) to ensure the 'best' consensus sequence is selected for each barcode (uses [supplementary structural_validation.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/structural_validation.py))
+   - Local BLASTn search - of structurally validated barcode sequences (currently uses BOLDistilled for rapid BLASTn searches, and thus is only suitable for COI) (uses supplementary [tv_local_blast.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/tv_local_blast.py)).
+   - Taxonomic validation of BLAST results - through parsing output local BLASTn results, and comparison of top BLAST hit taxonomy (observed taxonomy) with input (expected) taxonomy (uses supplementary [tv_blast2taxonomy.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/tv_blast2taxonomy.py)).
 9. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
-10. **Final mergin of metrics** generated during Fastp, TrimGalore, Gene Fetch, MGE, Fasta_cleaner, structural validation and taxononmic validation steps (uses supplementary [val_csv_merger.py](https://github.com/bge-barcoding/BGEE/blob/main/workflow/scripts/val_csv_merger.py)).
+10. **Final mergin of metrics** generated during Fastp, TrimGalore, Gene Fetch, MGE, Fasta_cleaner, structural validation and taxononmic validation steps (uses supplementary [val_csv_merger.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/val_csv_merger.py)).
 11. **Clean up** temporary files, sample-specific logs once aggregated, etc. (cleanup_files).
 
 
 
 # Installation and set up: #
-## Clone BGEE github repository and set up conda environment ##
+## Clone BeeGees github repository and set up conda environment ##
 - [Install miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions).
 ```bash
-git clone https://github.com/bge-barcoding/BGEE.git [path/to/desired/install/location/]
-cd installation/dir/BGEE
-conda env create -f bgee_env.yaml
+git clone https://github.com/bge-barcoding/BeeGees.git [path/to/desired/install/location/]
+cd installation/dir/BeeGees
+conda env create -f BeeGees_env.yaml
 git status
 ```
 
@@ -103,8 +103,8 @@ git status
 * **Currently, it is crucial that the sample name (process_id), reference sequence FASTA file, and corresponding reference sequence FASTA header are all identical for correct sample-reference file mapping.**
 
 ## Customising snakemake configuration file ##
-- Update [config/config.yaml](https://github.com/bge-barcoding/BGEE/blob/main/config/config.yaml) with the neccessary paths and variables.
-- **Currently, BGEE's structural_validation only works for COI-5P and rbcL barcodes due to HMM availability (to be updated). BGEE's taxonomic_validation currently only works for COI-5P due to sole use of the BOLDistilled BLAST DB (to be updated).**
+- Update [config/config.yaml](https://github.com/bge-barcoding/BeeGees/blob/main/config/config.yaml) with the neccessary paths and variables.
+- **Currently, BeeGees' structural_validation only works for COI-5P and rbcL barcodes due to HMM availability (to be updated). BeeGees' taxonomic_validation currently only works for COI-5P due to sole use of the BOLDistilled BLAST DB (to be updated).**
 - Each rule in the config.yaml can specify the number of requested threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
 
 ## Cluster configuration using Snakemake profiles ##
@@ -260,7 +260,7 @@ output_dir/
 │       ├── out/                                               # MGE output files per sample/parameter
 │       ├── err/                                               # MGE error logs per sample/parameter
 │       └── {run_name}_concat-stats.csv                        # Mode-specific statistics
-│   ├── {run_name}_bgee_stats.csv                              # Combined statistics from both modes
+│   ├── {run_name}_BeeGees_stats.csv                              # Combined statistics from both modes
 │   └── {run_name}_all_cons_combined.fasta                     # All consensus sequences from both modes
 │
 ├── 04_barcode_validation/
@@ -282,7 +282,7 @@ output_dir/
 # Contributing #
 - Please feel free to submit issues, fork the repository, and create pull requests for any improvements.
 - This snakemake pipeline was produced by Dan Parsons @ NHMUK for the BioDiversity Genomics Europe (BGE) consortium.
-- Since BGEE uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
+- Since BeeGees uses [MitogeneExtractor](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.14075) at its core, please cite:
   Brasseur, M.V., Astrin, J.J., Geiger, M.F., Mayer, C., 2023. MitoGeneExtractor: Efficient extraction of mitochondrial genes from next-generation sequencing libraries. Methods in Ecology and Evolution.
 
 
