@@ -1,8 +1,8 @@
 # config/config.yaml
 
-## General BGEE pipeline parameters and paths
-# BGEE run name identifier
-run_name: "BGEE_RUN_1"
+## General BeeGees pipeline parameters and paths
+# BeeGees run name identifier
+run_name: "BeeGees_RUN_1"
 # Path to MGE installation (MitoGeneExtractor-vX.X.X file)
 mge_path: "path/to/MitoGeneExtractor-1.9.6beta3/MitoGeneExtractor-v1.9.6beta3"
 # Path to samples.csv
@@ -10,7 +10,7 @@ samples_file: "path/to/samples.csv"
 # Path to references.csv (comment out 'sequence_reference_file' line below or remove path if 'run_gene_fetch' is true)
 sequence_reference_file: ""
 # Path to output directory. Will make final dir if it does not exist already
-output_dir: "path/to/BGEE-RUN_1-out"
+output_dir: "path/to/BeeGees-RUN_1-out"
 
 
 ## Gene Fetch parameters (https://github.com/bge-barcoding/gene_fetch)
@@ -203,7 +203,7 @@ rules:
   blast2taxonomy:
     mem_mb: 4096
     threads: 2
-  val_bgee_stats_merge:
+  val_BeeGees_stats_merge:
     mem_mb: 4096
     threads: 2
   remove_fasta_cleaner_files:
