@@ -3,7 +3,7 @@
 val_csv_merger.py
 
 This script merges structural validation (structval) and taxonomic validation (taxval) 
-CSV data files into a BGEE metrics CSV file. It performs left joins based on 
+CSV data files into a BeeGees metrics CSV file. It performs left joins based on 
 sequence ID matching to create a comprehensive dataset combining gene expression data 
 with structural and taxonomic validation metrics.
 
@@ -21,7 +21,7 @@ Taxval CSV columns:
 - match_taxonomy, matched_rank, top_matching_hit, pident
 - length (renamed to aligned_length), mismatch, evalue
 
-BGEE CSV:
+BeeGees CSV:
 - fasta_header: FASTA sequence headers (may include '>' prefix)
 - Additional gene expression and metadata columns
 
@@ -31,14 +31,14 @@ Command line interface:
 
 python val_csv_merger.py --input-structval structval_data.csv \\
                      --input-taxval taxval_data.csv \\
-                     --input-bgee-csv bgee_expression.csv \\
+                     --input-BeeGees-csv BeeGees_expression.csv \\
                      --output merged_results.csv
 
 
 OUTPUT
 ======
 Creates a merged CSV file containing:
-- All original columns from the Bgee dataset
+- All original columns from the BeeGees dataset
 - Structural validation metrics (where sequence matches exist)
 - Taxonomic validation results (where sequence matches exist)
 - Merge statistics printed to console
@@ -70,14 +70,14 @@ def clean_fasta_header(header):
     return str(header).lstrip('>')
 
 
-def merge_csv_files(input_structval, input_taxval, input_bgee_csv, output_file):
+def merge_csv_files(input_structval, input_taxval, input_BeeGees_csv, output_file):
     """
-    Merge structval and taxval CSV files into bgee CSV file.
+    Merge structval and taxval CSV files into BeeGees CSV file.
     
     Args:
         input_structval (str): Path to structval CSV file
         input_taxval (str): Path to taxval CSV file  
-        input_bgee_csv (str): Path to bgee CSV file
+        input_BeeGees_csv (str): Path to BeeGees CSV file
         output_file (str): Path for output merged CSV file
     """
     
@@ -87,7 +87,7 @@ def merge_csv_files(input_structval, input_taxval, input_bgee_csv, output_file):
     try:
         structval_df = pd.read_csv(input_structval)
         taxval_df = pd.read_csv(input_taxval)
-        bgee_df = pd.read_csv(input_bgee_csv)
+        BeeGees_df = pd.read_csv(input_BeeGees_csv)
     except FileNotFoundError as e:
         print(f"Error: Could not find file {e.filename}")
         sys.exit(1)
@@ -97,10 +97,10 @@ def merge_csv_files(input_structval, input_taxval, input_bgee_csv, output_file):
     
     print(f"Loaded {len(structval_df)} rows from structval")
     print(f"Loaded {len(taxval_df)} rows from taxval") 
-    print(f"Loaded {len(bgee_df)} rows from bgee")
+    print(f"Loaded {len(BeeGees_df)} rows from BeeGees")
     
-    # Clean fasta headers in bgee_df for matching
-    bgee_df['clean_fasta_header'] = bgee_df['fasta_header'].apply(clean_fasta_header)
+    # Clean fasta headers in BeeGees_df for matching
+    BeeGees_df['clean_fasta_header'] = BeeGees_df['fasta_header'].apply(clean_fasta_header)
     
     # Define columns to merge from each file
     structval_columns = [
@@ -131,10 +131,10 @@ def merge_csv_files(input_structval, input_taxval, input_bgee_csv, output_file):
     taxval_df_subset = taxval_df[taxval_columns].copy()  
     taxval_df_subset = taxval_df_subset.rename(columns={'length': 'aligned_length'})
     
-    # Merge bgee with structval
+    # Merge BeeGees with structval
     print("Merging with structval data...")
     merged_df = pd.merge(
-        bgee_df, 
+        BeeGees_df, 
         structval_df_subset, 
         left_on='clean_fasta_header', 
         right_on='seq_id',
@@ -176,7 +176,7 @@ def merge_csv_files(input_structval, input_taxval, input_bgee_csv, output_file):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Merge structval and taxval CSV files into BGEE CSV file"
+        description="Merge structval and taxval CSV files into BeeGees CSV file"
     )
     parser.add_argument(
         '--input-structval', 
@@ -189,9 +189,9 @@ def main():
         help='Path to taxval CSV file'
     )
     parser.add_argument(
-        '--input-bgee-csv', 
+        '--input-BeeGees-csv', 
         required=True,
-        help='Path to bgee CSV file'
+        help='Path to BeeGees CSV file'
     )
     parser.add_argument(
         '--output', 
@@ -202,7 +202,7 @@ def main():
     args = parser.parse_args()
     
     # Verify input files exist
-    for file_path in [args.input_structval, args.input_taxval, args.input_bgee_csv]:
+    for file_path in [args.input_structval, args.input_taxval, args.input_BeeGees_csv]:
         if not Path(file_path).exists():
             print(f"Error: File not found: {file_path}")
             sys.exit(1)
@@ -211,7 +211,7 @@ def main():
     merge_csv_files(
         args.input_structval,
         args.input_taxval, 
-        args.input_bgee_csv,
+        args.input_BeeGees_csv,
         args.output
     )
 
