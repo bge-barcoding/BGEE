@@ -386,7 +386,7 @@ rule all:
         (os.path.join(main_output_dir, f"04_barcode_validation/taxonomic/{run_name}_barcode_sequences.fasta") if run_taxonomic_validation else []),
        
         # ==== FINAL OUTPUTS ====
-        os.path.join(barcode_recovery_dir, f"{run_name}_bgee_stats.csv"),
+        os.path.join(barcode_recovery_dir, f"{run_name}_BeeGees_stats.csv"),
         os.path.join(barcode_recovery_dir, f"{run_name}_all_cons_combined.fasta"),
         (os.path.join(main_output_dir, f"{run_name}_final_stats.csv") if run_structural_validation and run_taxonomic_validation else []),
         os.path.join(preprocessing_dir_concat, "logs/final_cleanup_complete.txt"),
@@ -2719,7 +2719,7 @@ rule combine_stats_files:
         merge_stats=os.path.join(barcode_recovery_dir_merge, f"{run_name}_merge-stats.csv"),
         concat_stats=os.path.join(barcode_recovery_dir_concat, f"{run_name}_concat-stats.csv")
     output:
-        combined_stats=os.path.join(barcode_recovery_dir, f"{run_name}_bgee_stats.csv")
+        combined_stats=os.path.join(barcode_recovery_dir, f"{run_name}_BeeGees_stats.csv")
     params:
         script=os.path.join(workflow.basedir, "scripts/csv_combiner_mge.py")
     threads: rule_resources["combine_stats_files"]["threads"]
@@ -2735,18 +2735,18 @@ rule combine_stats_files:
             --output {output.combined_stats}
         """	
 
-rule val_bgee_stats_merge:
+rule val_BeeGees_stats_merge:
     input:
         structval=os.path.join(main_output_dir, f"04_barcode_validation/structural/structural_validation.csv"),
         taxval=os.path.join(main_output_dir, f"04_barcode_validation/taxonomic/02_taxonomic_validation.csv"),
-        bgee=os.path.join(barcode_recovery_dir, f"{run_name}_bgee_stats.csv")
+        BeeGees=os.path.join(barcode_recovery_dir, f"{run_name}_BeeGees_stats.csv")
     output:
         final_stats=os.path.join(main_output_dir, f"{run_name}_final_stats.csv")
     params:
         script=os.path.join(workflow.basedir, "scripts/val_csv_merger.py")
-    threads: rule_resources["val_bgee_stats_merge"]["threads"]
+    threads: rule_resources["val_BeeGees_stats_merge"]["threads"]
     resources:
-        mem_mb=lambda wildcards, attempt: rule_resources["val_bgee_stats_merge"]["mem_mb"] * attempt
+        mem_mb=lambda wildcards, attempt: rule_resources["val_BeeGees_stats_merge"]["mem_mb"] * attempt
     retries: 3
     shell:
         """
@@ -2755,7 +2755,7 @@ rule val_bgee_stats_merge:
         python {params.script} \
             --input-structval {input.structval} \
             --input-taxval {input.taxval} \
-            --input-bgee-csv {input.bgee} \
+            --input-BeeGees-csv {input.BeeGees} \
             --output {output.final_stats}
         """	
 
