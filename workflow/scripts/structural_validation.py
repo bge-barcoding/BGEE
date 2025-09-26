@@ -48,18 +48,15 @@ PROCESS
 
 SELECTION 
 ===================
-For each unique process ID, sequences are filtered and selected as follows:
-
-Required Filters (all must pass):
-• barcode_ambiguous_bases_original == 0 (no original N's)
-• stop_codons == 0 (valid protein-coding sequence)
-• barcode_base_count > 200 (sufficient length for reliable identification)
-• barcode_ambiguous_bases < 30% of barcode_base_count (acceptable quality after processing)
+For each unique process ID, a sequence must pass ALL of these filters to be written to the barcode output file:
+- barcode_ambiguous_bases_original == 0 (no original N's before processing)
+- stop_codons == 0 (valid protein-coding sequence)
+- barcode_base_count > 200 (sufficient actual nucleotides)
+- barcode_ambiguous_bases < 30% of barcode_base_count (acceptable quality after processing)
 
 Selection Criterion:
-• Among qualifying sequences: select the one with highest barcode_base_count
-• This prioritizes actual nucleotide content over total length
-
+- Among qualifying sequences: select the one with highest barcode_base_count
+- This prioritises actual nucleotide content over total length
 
 RANKING CRITERIA
 ================
@@ -161,12 +158,6 @@ from collections import defaultdict
 
 
 def check_nhmmer_available():
-    """
-    Check if nhmmer is available in the system PATH.
-    
-    Returns:
-        bool: True if nhmmer is available, False otherwise
-    """
     try:
         result = subprocess.run(['nhmmer', '-h'], capture_output=True, text=True)
         return result.returncode == 0
@@ -175,15 +166,6 @@ def check_nhmmer_available():
 
 
 def parse_hmm_length(hmm_file):
-    """
-    Parse the HMM profile file to extract the length (LENG field).
-    
-    Parameters:
-        hmm_file (str): Path to HMM profile file
-        
-    Returns:
-        int: HMM length or None if not found
-    """
     try:
         with open(hmm_file, 'r') as f:
             for line in f:
@@ -201,12 +183,6 @@ def parse_hmm_length(hmm_file):
 
 
 def setup_logging(log_file=None):
-    """
-    Set up logging configuration.
-    
-    Parameters:
-        log_file (str): Optional path to log file
-    """
     log_format = '%(asctime)s - %(levelname)s - %(message)s'
     logging.basicConfig(
         level=logging.INFO,
@@ -219,18 +195,6 @@ def setup_logging(log_file=None):
 
 
 def validate_files(input_files, output_csv, output_fasta, hmm_file):
-    """
-    Validate input and output file paths.
-    
-    Parameters:
-        input_files (list): List of input FASTA file paths
-        output_csv (str): Path to output CSV file
-        output_fasta (str): Path to output FASTA file
-        hmm_file (str): Path to HMM profile file
-        
-    Returns:
-        bool: True if validation passes, False otherwise
-    """
     # Check input files exist
     for file in input_files:
         if not os.path.exists(file):
@@ -262,15 +226,6 @@ def validate_files(input_files, output_csv, output_fasta, hmm_file):
 
 
 def trim_n_characters(sequence):
-    """
-    Trim leading and trailing N characters from a sequence.
-    
-    Parameters:
-        sequence (str): The sequence to trim
-        
-    Returns:
-        str: Trimmed sequence
-    """
     # First trim leading N's
     start = 0
     while start < len(sequence) and sequence[start] in ['N', 'n']:
@@ -290,15 +245,6 @@ def trim_n_characters(sequence):
 
 
 def calculate_longest_stretch_full_seq(sequence):
-    """
-    Calculate longest continuous stretch without gaps AND N's for full sequences.
-    
-    Parameters:
-        sequence (str): The sequence to analyze
-        
-    Returns:
-        int: Length of longest stretch without gaps or N's
-    """
     if not sequence:
         return 0
     
@@ -308,16 +254,6 @@ def calculate_longest_stretch_full_seq(sequence):
 
 
 def calculate_barcode_base_count(sequence):
-    """
-    Calculate the number of actual nucleotide bases in the barcode sequence.
-    This is the length of the sequence minus all N characters.
-    
-    Parameters:
-        sequence (str): The barcode sequence to analyze
-        
-    Returns:
-        int: Number of actual nucleotide bases (length - N count)
-    """
     if not sequence:
         return 0
     
@@ -329,29 +265,10 @@ def calculate_barcode_base_count(sequence):
 
 
 def replace_gaps_with_n(sequence):
-    """
-    Replace all gap characters (-) with N characters in the sequence.
-    
-    Parameters:
-        sequence (str): The sequence to process
-        
-    Returns:
-        str: Sequence with gaps replaced by N's
-    """
     return sequence.replace('-', 'N')
 
 
 def get_complete_codons(seq, offset):
-    """
-    Extract complete codons from sequence starting at given offset.
-    
-    Parameters:
-        seq (str): Input sequence
-        offset (int): Reading frame offset (0, 1, or 2)
-        
-    Returns:
-        str: String of complete codons (no gaps or Ns)
-    """
     complete_codons = ""
     # Loop over the sequence in steps of 3, starting from the given offset.
     for i in range(offset, len(seq) - 2, 3):
@@ -362,17 +279,6 @@ def get_complete_codons(seq, offset):
     return complete_codons
     
 def run_nhmmer_on_sequence(sequence, seq_id, hmm_file):
-    """
-    Run nhmmer on a single sequence and return the best alignment result.
-    
-    Parameters:
-        sequence (str): The sequence to align
-        seq_id (str): Sequence identifier
-        hmm_file (str): Path to HMM file
-        
-    Returns:
-        dict: Dictionary with alignment coordinates or None if no significant match
-    """
     try:
         # Create FASTA file with the sequence
         with tempfile.NamedTemporaryFile(mode='w+', suffix='.fasta', delete=False) as temp_input, \
@@ -423,16 +329,6 @@ def run_nhmmer_on_sequence(sequence, seq_id, hmm_file):
 
 
 def parse_nhmmer_result(tabular_content, seq_id):
-    """
-    Parse nhmmer tabular output for the best alignment result.
-    
-    Parameters:
-        tabular_content (str): Content of the .tbl file
-        seq_id (str): Original sequence ID
-        
-    Returns:
-        dict: Dictionary with alignment coordinates or None if no significant match
-    """
     best_result = None
     best_evalue = float('inf')
     
@@ -506,18 +402,7 @@ def parse_nhmmer_result(tabular_content, seq_id):
 
 
 def construct_hmm_space_from_alignment(alignment_result, sequence, hmm_length):
-    """
-    Construct HMM coordinate space sequence from single alignment result.
-    
-    Parameters:
-        alignment_result (dict): Dictionary with alignment coordinates
-        sequence (str): The original N-padded sequence
-        hmm_length (int): Length of the HMM profile
-        
-    Returns:
-        str: Sequence string in HMM coordinate space
-    """
-    # Initialize HMM sequence with gaps
+    # Initialise HMM sequence with gaps
     hmm_sequence = ['-'] * hmm_length
     
     logging.debug(f"Constructing HMM space sequence from alignment")
@@ -559,15 +444,6 @@ def construct_hmm_space_from_alignment(alignment_result, sequence, hmm_length):
 
 
 def trim_sequence_ends(sequence):
-    """
-    Trim leading and trailing Ns while preserving internal Ns.
-    
-    Parameters:
-        sequence (str): Input sequence string
-        
-    Returns:
-        str: Trimmed sequence string
-    """
     # Remove leading Ns (gaps already converted to N's at this point)
     start = 0
     while start < len(sequence) and sequence[start] in 'N':
@@ -591,8 +467,6 @@ def trim_sequence_ends(sequence):
 
 def align_sequence_with_nhmmer(record, hmm_file, hmm_length):
     """
-    Process sequence using N-padding nhmmer approach.
-    
     Process sequence by:
     1. Removing tilde characters (preserve gaps)
     2. Replacing gap characters with N characters
@@ -600,15 +474,6 @@ def align_sequence_with_nhmmer(record, hmm_file, hmm_length):
     4. Constructing HMM space sequence from alignment results
     5. Replacing HMM coordinate space gaps with N characters
     6. Trimming leading/trailing Ns while preserving internal Ns
-    
-    Parameters:
-        record (SeqRecord): The DNA sequence record to align
-        hmm_file (str): Path to HMM profile file
-        hmm_length (int): Length of the HMM profile
-        
-    Returns:
-        tuple: (aligned_seq, original_seq_before_nhmmer) where aligned_seq is SeqRecord in HMM coordinate space 
-               and original_seq_before_nhmmer is the sequence before nhmmer processing (after step 1)
     """
     try:
         # Step 1: Remove tilde characters (preserve gaps - they're biologically meaningful!)
@@ -654,23 +519,13 @@ def align_sequence_with_nhmmer(record, hmm_file, hmm_length):
         return None, str(record.seq).replace('~', '')
         
 def determine_reading_frame(aligned_seq, trans_table):
-    """
-    Determine the reading frame from HMM-aligned sequence.
-
-    Parameters:
-        aligned_seq (str): HMM-aligned sequence string
-        trans_table (int): Translation table to use
-        
-    Returns:
-        tuple: (reading_frame, stop_codons_count, protein_sequence)
-    """
     best_frame = 0
     best_protein = ""
     min_stops = float('inf')
 
     logging.info(f"=== Analysing reading frames ===")
     
-    # Analyze all 3 reading frames
+    # Analyse all 3 reading frames
     frame_results = []
     for frame in range(3):
         coding_seq = get_complete_codons(aligned_seq, frame)
@@ -724,18 +579,6 @@ def determine_reading_frame(aligned_seq, trans_table):
 
 
 def calculate_barcode_rank(barcode_ambiguous_bases_original, stop_codons, reading_frame_valid, barcode_base_count):
-    """
-    Calculate barcode rank based on updated criteria.
-    
-    Parameters:
-        barcode_ambiguous_bases_original (int): Original N's before nhmmer processing
-        stop_codons (int): Number of stop codons in best reading frame
-        reading_frame_valid (bool): True if reading frame has zero stop codons
-        barcode_base_count (int): Number of actual nucleotide bases in barcode
-        
-    Returns:
-        int: Barcode rank (1-6)
-    """
     # Rank 6: Has original N's
     if barcode_ambiguous_bases_original > 0:
         return 6
@@ -767,15 +610,6 @@ def calculate_full_rank(ambiguous_bases):
 
 
 def passes_quality_criteria(result):
-    """
-    Check if a sequence result passes the updated quality criteria.
-    
-    Parameters:
-        result (dict): Sequence result dictionary
-        
-    Returns:
-        bool: True if sequence meets all quality criteria
-    """
     # Basic structural validation
     if result['barcode_ambiguous_bases_original'] != 0 or result['stop_codons'] != 0:
         return False
@@ -794,21 +628,6 @@ def passes_quality_criteria(result):
 
 
 def select_sequences_for_process(results):
-    """
-    Select the best sequence for a process based on updated quality criteria.
-    
-    Filter: 
-    1. barcode_ambiguous_bases_original == 0 AND stop_codons == 0 (REQUIRED)
-    2. barcode_base_count > 200
-    3. barcode_ambiguous_bases < 30% of barcode_base_count
-    Select: Highest barcode_base_count (actual nucleotide content)
-    
-    Parameters:
-        results (list): List of sequence results for a process
-        
-    Returns:
-        tuple: (best_sequence, best_sequence) or (None, None) if no qualifying sequences
-    """
     # Filter sequences that meet all quality criteria
     qualifying_sequences = [
         result for result in results
@@ -825,17 +644,6 @@ def select_sequences_for_process(results):
 
 
 def format_sequence(seq_record, trim_gaps=True, convert_internal_gaps=True):
-    """
-    Format a sequence according to specified criteria.
-    
-    Parameters:
-        seq_record (SeqRecord): The sequence record to format
-        trim_gaps (bool): Whether to trim leading and trailing gaps
-        convert_internal_gaps (bool): Whether to convert internal gaps to N
-        
-    Returns:
-        SeqRecord: Formatted sequence record
-    """
     sequence = str(seq_record.seq)
     
     if trim_gaps:
@@ -862,15 +670,6 @@ def format_sequence(seq_record, trim_gaps=True, convert_internal_gaps=True):
 
 
 def format_barcode_sequence(aligned_barcode_record):
-    """
-    Format the nhmmer-aligned barcode sequence.
-    
-    Parameters:
-        aligned_barcode_record (SeqRecord): The nhmmer-aligned barcode sequence record
-        
-    Returns:
-        SeqRecord: Formatted barcode sequence record
-    """
     if not aligned_barcode_record:
         return None
         
@@ -893,21 +692,6 @@ def format_barcode_sequence(aligned_barcode_record):
 
 
 def format_barcode_gaps(sequence):
-    """
-    Format gaps in barcode sequence according to specified rules:
-    - Remove internal ~ characters and stitch sequence back together
-    - For gaps marked with -, if ≤ 6 bases fill with N
-    - For gaps > 6 bases marked with -, keep the longest fragment
-    
-    Note: In the new workflow, gaps are already replaced with N's during HMM processing,
-    so this function primarily handles any remaining formatting needs.
-    
-    Parameters:
-        sequence (str): The sequence to process
-        
-    Returns:
-        str: Formatted sequence
-    """
     # First handle ~ characters by removing them and stitching sequence
     sequence = sequence.replace('~', '')
     
@@ -946,31 +730,9 @@ def format_barcode_gaps(sequence):
 
 
 def format_sequence_id(process_id, parameters):
-    """
-    Format sequence ID according to specified format.
-    
-    Parameters:
-        process_id (str): Process ID
-        parameters (str): Parameters
-        
-    Returns:
-        str: Formatted sequence ID
-    """
     return f"{process_id}_{parameters}" if parameters else process_id
     
 def analyse_fasta(file_path, hmm_file, hmm_length, trans_table):
-    """
-    Analyse a FASTA file and extract various metrics from each sequence using nhmmer.
-
-    Parameters:
-        file_path (str): The path to the FASTA file to be analysed.
-        hmm_file (str): Path to HMM profile file
-        hmm_length (int): Length of the HMM profile
-        trans_table (int): Translation table for genetic code
-
-    Returns:
-        dict: A dictionary containing analysis results for each sequence in the FASTA file.
-    """
     try:
         # Initialise dictionaries
         results = {}
@@ -1003,7 +765,7 @@ def analyse_fasta(file_path, hmm_file, hmm_length, trans_table):
                 # Clean and split seq_id into process_id and parameters
                 seq_id_clean = seq_id.replace("Consensus_", "") if seq_id.startswith("Consensus_") else seq_id
 
-                # Initialize process_id and parameters
+                # Initialise process_id and parameters
                 process_id = seq_id_clean
                 parameters = ""
 
@@ -1055,7 +817,7 @@ def analyse_fasta(file_path, hmm_file, hmm_length, trans_table):
                 # Use nhmmer to extract and align barcode region
                 aligned_barcode, original_seq_before_nhmmer = align_sequence_with_nhmmer(record, hmm_file, hmm_length)
                 
-                # Initialize translation variables
+                # Initialise translation variables
                 reading_frame = -1
                 stop_codons = 0
                 reading_frame_valid = False
@@ -1077,7 +839,7 @@ def analyse_fasta(file_path, hmm_file, hmm_length, trans_table):
                     # Count gaps in barcode for logging
                     barcode_gaps = barcode_seq.count('-')  # Should be 0 in new workflow
                     
-                    # Determine reading frame and analyze translation
+                    # Determine reading frame and analyse translation
                     if barcode_seq:  # Only if we have sequence to translate
                         reading_frame, stop_codons, protein_seq = determine_reading_frame(barcode_seq, trans_table)
                         reading_frame_valid = (stop_codons == 0)
@@ -1153,18 +915,6 @@ def analyse_fasta(file_path, hmm_file, hmm_length, trans_table):
         return {}
         
 def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta):
-    """
-    Write the best sequences that meet specific quality criteria to new FASTA files.
-    Sequences are written without line breaks.
-    
-    Parameters:
-        best_sequences (dict): Dictionary containing the best sequences for each process_id
-        output_fasta (str): Path to output FASTA file for full sequences
-        output_barcode_fasta (str): Path to output FASTA file for barcode regions
-        
-    Returns:
-        dict: Selection records tracking which sequences were written to output files
-    """
     try:
         selected_full_records = []
         selected_barcode_records = []
@@ -1230,15 +980,6 @@ def write_best_sequences(best_sequences, output_fasta, output_barcode_fasta):
 
 
 def group_sequences_by_process(all_results):
-    """
-    Group sequences by process_id for selection.
-    
-    Parameters:
-        all_results (list): List of all sequence results
-        
-    Returns:
-        dict: Dictionary with process_id as key and list of results as value
-    """
     process_groups = defaultdict(list)
     
     for result in all_results:
@@ -1249,15 +990,6 @@ def group_sequences_by_process(all_results):
 
 
 def select_best_sequences_for_all_processes(process_groups):
-    """
-    Select the best sequence for each process using the centralized selection logic.
-    
-    Parameters:
-        process_groups (dict): Dictionary with process_id as key and list of results as value
-        
-    Returns:
-        dict: Dictionary with process_id as key and best result as value
-    """
     best_sequences = {}
     processes_with_no_qualifying_sequences = []
     
@@ -1387,7 +1119,7 @@ def main():
         process_groups = group_sequences_by_process(all_results)
         logging.info(f"Found {len(process_groups)} unique process_ids")
 
-        # Select best sequences for each process using centralized logic
+        # Select best sequences for each process id
         logging.info("Selecting best sequences for each process...")
         best_sequences = select_best_sequences_for_all_processes(process_groups)
         
