@@ -387,22 +387,53 @@ def parse_bold_tsv(bold_file: str, logger) -> Dict[str, Dict]:
         sys.exit(1)
 
 def parse_taxonomy_csv(taxonomy_file: str, logger) -> Dict[str, Dict]:
-    """Parse taxonomy CSV file and return dictionary of Process ID -> taxonomy info."""
+    """
+    Parse taxonomy CSV file and return dictionary of Process ID -> taxonomy info.
+    Accepts 'Process ID' or 'ID' column (case-insensitive).
+    All column names are treated case-insensitively.
+    """
     taxonomy_data = {}
     
     try:
         with open(taxonomy_file, 'r') as f:
             reader = csv.DictReader(f)
             
+            # Create case-insensitive column mapping
+            original_fieldnames = reader.fieldnames
+            fieldname_map = {name.lower(): name for name in original_fieldnames}
+            
+            # Find the ID column (accept 'process id' or 'id', case-insensitive)
+            id_column = None
+            for potential_id in ['process id', 'id']:
+                if potential_id in fieldname_map:
+                    id_column = fieldname_map[potential_id]
+                    break
+            
+            if not id_column:
+                logger.error(f"No 'Process ID' or 'ID' column found in taxonomy file. Available columns: {', '.join(original_fieldnames)}")
+                sys.exit(1)
+            
+            logger.info(f"Using '{id_column}' as the ID column")
+            
+            # Get taxonomic rank columns (case-insensitive)
+            rank_columns = {
+                'phylum': fieldname_map.get('phylum'),
+                'class': fieldname_map.get('class'),
+                'order': fieldname_map.get('order'),
+                'family': fieldname_map.get('family'),
+                'genus': fieldname_map.get('genus'),
+                'species': fieldname_map.get('species')
+            }
+            
             for row in reader:
-                process_id = row['Process ID']
+                process_id = row[id_column]
                 taxonomy_data[process_id] = {
-                    'phylum': row.get('phylum', ''),
-                    'class': row.get('class', ''),
-                    'order': row.get('order', ''),
-                    'family': row.get('family', ''),
-                    'genus': row.get('genus', ''),
-                    'species': row.get('species', '')
+                    'phylum': row.get(rank_columns['phylum'], '') if rank_columns['phylum'] else '',
+                    'class': row.get(rank_columns['class'], '') if rank_columns['class'] else '',
+                    'order': row.get(rank_columns['order'], '') if rank_columns['order'] else '',
+                    'family': row.get(rank_columns['family'], '') if rank_columns['family'] else '',
+                    'genus': row.get(rank_columns['genus'], '') if rank_columns['genus'] else '',
+                    'species': row.get(rank_columns['species'], '') if rank_columns['species'] else ''
                 }
                 
         logger.info(f"Parsed expected taxonomy for {len(taxonomy_data)} Process IDs from {taxonomy_file}")
