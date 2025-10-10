@@ -14,7 +14,7 @@ dependencies:
   - trim-galore=0.6.10
   - fastp=0.23.4
   - pigz=2.8
-  - pandas=2.2.2
+  - pandas=2.2.3
   - bwa=0.7.19
   - samtools=1.22
   - numpy=1.26.4
