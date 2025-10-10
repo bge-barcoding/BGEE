@@ -12,10 +12,8 @@ sequence_reference_file: ""
 # Path to output directory. Will make final dir if it does not exist already
 output_dir: "path/to/BeeGees-RUN_1-out"
 
-
-## Gene Fetch parameters (https://github.com/bge-barcoding/gene_fetch)
-# See Gene Fetch repository (https://github.com/bge-barcoding/gene_fetch) or `gene-fetch --help` for more detailed parameter information
-## Gene Fetch parameters (https://github.com/bge-barcoding/gene_fetch)
+## Gene Fetch parameters can be found on the repository (https://github.com/bge-barcoding/gene_fetch), or using `gene-fetch --help`.
+# Instructions on obtaining NCBI API credentials can be found here: https://support.nlm.nih.gov/kbArticle/?pn=KA-05317
 run_gene_fetch: true  # Set true to use gene-fetch to generate reference sequences
 gene_fetch:
    email: "example@example.ac.uk"                          # Required: Email for NCBI API
