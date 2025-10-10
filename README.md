@@ -71,7 +71,7 @@ git status
 
 ## Generate sample input file ###
 - Can be created manually, or via [sample-processing](https://github.com/bge-barcoding/sample-processing) workflow.
-- **Must contain `ID`, `forward` (read paths), `reverse` (read paths), and `taxid` _OR_ `hierarchical taxonomy` columns (see below for examples).**
+- **Must contain `ID`, `forward` (read paths), `reverse` (read paths), and `taxid` _OR_ `hierarchical taxonomy` (phylum->species) columns (see below for example).**
 - Due to regex matching and statistics aggregation, the sample ID will be considered as the string before the first underscore. **It is therefore recommended that sample names do not use '_' characters.** E.g. BSNHM002-24 instead of BSNHM002_24, or P3-1-A10-2-G1 instead of P3_1_A10_2_G1.
 - Taxid's can be found manually by searching the expected species/genus/family of each sample in the [NCBI taxonomy database](https://www.ncbi.nlm.nih.gov/taxonomy).
   
@@ -91,7 +91,7 @@ git status
 
 ## Gathering sample-specific pseudo-references ##
 - This can be created manually, or using [Gene-fetch](https://github.com/bge-barcoding/gene_fetch) integrated into the workflow (highly recommended). If enabled (in the config.yaml by setting `run_gene_fetch` to 'true'), gene-fetch will retrieve the necessary protein pseudo-references for each sample from NCBI GenBank using the sample's taxonomic identifier (taxid)/taxonomic hierarchy for each sample, a sequence target (e.g. COI or rbcL), and NCBI API credentials (email address & API key - see [guidance](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) on getting a key).
-- If hierarchical taxonomic information is provided (see `samples.csv example (hierarchical taxonomy)` above) for each sample instead of a taxid (see `samples.csv example (taxid)` above), `Gene Fetch` will, starting from the lowest given rank (e.g. species), find the closest valid taxid on NCBI for the provided taxonomy before proceeding with pseudo-reference fetching.
+- If hierarchical taxonomic information is provided for each sample instead of a taxid (see above), `Gene Fetch` will, starting from the lowest given rank (e.g. species), find the closest valid taxid on NCBI for the provided taxonomy before proceeding with fetching the pseudo-references.
 - **Must contain 'process_id', 'reference'name' and 'protein_reference_path' at a minimum.**
 
 **sample_references.csv example**
@@ -106,6 +106,7 @@ git status
 - Update [config/config.yaml](https://github.com/bge-barcoding/BeeGees/blob/main/config/config.yaml) with the neccessary paths and variables.
 - **Currently, BeeGees' structural_validation only works for COI-5P and rbcL barcodes due to HMM availability (to be updated). BeeGees' taxonomic_validation currently only works for COI-5P due to sole use of the BOLDistilled BLAST DB (to be updated).**
 - Each rule in the config.yaml can specify the number of requested threads and memory resources (in Mb) for every job (e.g. specifying 4 threads and 4G memory for fastp_pe_merge would allocate those resources for every 'fastp_pe_merge' job).
+- If heirarchical taxonomy information was provided in the `samples.csv` file, this file can be reused as the expected_taxonomy CSV file required during taxonomic validation of barcode consensus sequences.
 
 ## Cluster configuration using Snakemake profiles ##
 - See `profiles/` directory for 'slurm' and 'local' (i.e. non-SLURM) cluster submission parameters. The `jobs` parameter is likely the most important as it dictates how many workflow jobs can be run concurrently.
@@ -115,8 +116,8 @@ git status
 - [snakemake_run.sh](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/snakemake_run.sh) handles submission of the snakemake workflow to the HPC cluster. The working directory will initially be unlocked (using `--unlock`) and then the snakemake workflow will be run. 
 
 
-#### If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job: ####
-- The safer way is to launch Snakemake inside a persistent screen session. This ensures the workflow keeps running even if you disconnect.
+**If using `profiles/slurm`, SLURM will orchestrate submission of each step in the workflow as a separate job:**
+The 'safest' way to run BeeGees is to launch Snakemake inside a persistent screen session. This ensures the workflow keeps running even if you disconnect.
 ```
 # Start a persistent screen session
 screen -S [SESSION_NAME]
@@ -127,17 +128,17 @@ salloc --job-name=[SESSION_NAME] \
        --cpus-per-task=16 \
        --mem=8G
 ```
-- Inside this allocation, you can launch Snakemake within an interactive session with srun:
+Inside this allocation, you can launch Snakemake within an interactive session with srun:
 ```
 srun ./snakemake_run.sh
 ```
-- To detach from the screen session (disconnect but keep it running): `Ctrl + A + D`
-- To reconnect again: `screen -r [SESSION_NAME]`
+- To detach from the screen session (detach but keep it running): `Ctrl + A + D`
+- To reattach to the screen session: `screen -r [SESSION_NAME]`
 - You may see a warning such as "You are running snakemake in a SLURM job context. This is not recommended..." - This can generally be ignored because the salloc session is only acting as a submission manager. If you do encounter problems, try running `./snakemake_run.sh` within the screen session without running `salloc`.
 
 
-#### If using `profiles/local`, all workflow steps will be run as a single job: ####
--  Simply run `./snakemake_run.sh` on your desired cluster compute node. This node will handle all job scheduling and job computation.
+**If using `profiles/local`, all workflow steps will be run as a single job:**
+Simply run `./snakemake_run.sh` on your desired cluster compute node. This node will handle all job scheduling and job computation.
 
 
 
@@ -288,6 +289,11 @@ output_dir/
 
 # To do #
 - Split Snakefile into modular .smk files.
-- Increase flexibility of input CSV headers (e.g. ID column in sample.csv and process_id column in sequence_references.csv could be ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc).
-- Update 01_human_cox1_filter.py to not just filter against human coi, but the whole human genome/mitogenome.
+- Increase flexibility of input sequence_references CSV headers, so that ID/id/Process ID/PROCESS ID/process_id/sample/sample_id/SAMPLE ID/etc are accepted.
+- Update 01_human_cox1_filter.py so it does not solely filter aligned reads against human COI, but the whole human genome or mitogenome.
+- Make downsampling a separate step that happens after fastp trimming for both merge_mode and concat_mode.
+- Output a multi-fasta file of sequences which passed structural validation but failed taxonomy for each Process-ID.
+- Output some simple plots.
+- Clean up and refactor final CSV output, and remove unnecessary columns.
+- 
   
