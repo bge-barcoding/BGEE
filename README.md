@@ -1,5 +1,5 @@
 # Barcode gene Extraction and Evaluation from Genome Skims (BeeGees) Snakemake workflow #
-Snakemake workflow for recovering high-quality barcode sequences from genome skim data, built around MitoGeneExtractor and adapted for genome skims of museum specimens.
+Snakemake workflow for recovering high-quality barcode sequences, built around MitoGeneExtractor and adapted for genome skims of museum specimens.
 
 # Contents # 
  - [Requirements](#Requirements)
@@ -50,7 +50,7 @@ Snakemake workflow for recovering high-quality barcode sequences from genome ski
 </p>
 
 8. **Validate and triage barcodes** 
-   - Structural validation - Processes all barcode consensus sequences produced by MGE (and fasta_cleaner), combining structural analysis (barcode region HMM-alignment, gaps, ambiguous bases, sequence length) with functional analysis (reading frame determination, stop codon counting, protein translation) to ensure the 'best' consensus sequence is selected for each barcode (uses [supplementary structural_validation.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/structural_validation.py))
+   - Structural validation - Processes all barcode consensus sequences produced by MGE (and fasta_cleaner), combining structural analysis (barcode region HMM-alignment, gaps, ambiguous bases, sequence length) with functional analysis (reading frame determination, stop codon counting, protein translation) to ensure the 'best' consensus sequence is selected for each barcode (uses supplementary [structural_validation.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/structural_validation.py))
    - Local BLASTn search - of structurally validated barcode sequences (currently uses BOLDistilled for rapid BLASTn searches, and thus is only suitable for COI) (uses supplementary [tv_local_blast.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/tv_local_blast.py)).
    - Taxonomic validation of BLAST results - through parsing output local BLASTn results, and comparison of top BLAST hit taxonomy (observed taxonomy) with input (expected) taxonomy (uses supplementary [tv_blast2taxonomy.py](https://github.com/bge-barcoding/BeeGees/blob/main/workflow/scripts/tv_blast2taxonomy.py)).
 9. **Compile statistics** from read QC, MGE, and consensus cleaning metrics into a CSV report for both 'concat' and 'merge' modes (uses supplementary [mge_stats.py](https://github.com/bge-barcoding/MitoGeneExtractor-BGE/blob/main/workflow/scripts/mge_stats.py) and combine_stats_files).
